@@ -7,4 +7,5 @@ edition = "2021"
 
 [dependencies]
 common = { path = "../common" }
+anyhow = "1.0.58"
 bincode = "1.3.3"

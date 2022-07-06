@@ -13,7 +13,7 @@ impl UairTimer {
 		UairTimer { duration, interval, started: Instant::now() }
 	}
 
-	pub async fn start(&mut self) -> Event {
+	pub async fn start(&mut self) -> anyhow::Result<Event> {
 		let first_interval = Duration::from_nanos(self.duration.subsec_nanos().into());
 
 		self.started = Instant::now();
@@ -26,7 +26,7 @@ impl UairTimer {
 			end += self.interval;
 		}
 
-		Event::Stop
+		Ok(Event::Stop)
 	}
 
 	pub fn update_duration(&mut self) {

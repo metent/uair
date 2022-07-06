@@ -10,17 +10,17 @@ pub struct Listener {
 }
 
 impl Listener {
-	pub fn new(path: &str) -> Self {
-		Listener { path: path.into(), listener: UnixListener::bind(path).unwrap() }
+	pub fn new(path: &str) -> anyhow::Result<Listener> {
+		Ok(Listener { path: path.into(), listener: UnixListener::bind(path)? })
 	}
 
-	pub async fn listen(&self) -> Event {
-		let (mut stream, _) = self.listener.accept().await.unwrap();
+	pub async fn listen(&self) -> anyhow::Result<Event> {
+		let (mut stream, _) = self.listener.accept().await?;
 		let mut buffer = Vec::new();
-		stream.read_to_end(&mut buffer).await.unwrap();
-		match bincode::deserialize::<Command>(&mut buffer).unwrap() {
-			Command::Pause => Event::Pause,
-			Command::Resume => Event::Start,
+		stream.read_to_end(&mut buffer).await?;
+		match bincode::deserialize::<Command>(&mut buffer)? {
+			Command::Pause => Ok(Event::Pause),
+			Command::Resume => Ok(Event::Start),
 		}
 	}
 }
