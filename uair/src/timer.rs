@@ -26,7 +26,7 @@ impl UairTimer {
 			end += self.interval;
 		}
 
-		Ok(Event::Stop)
+		Ok(Event::Finished)
 	}
 
 	pub fn update_duration(&mut self) {

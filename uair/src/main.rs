@@ -3,8 +3,9 @@ mod timer;
 
 use std::time::Duration;
 use futures_lite::FutureExt;
-use server::{Event, Listener};
+use server::Listener;
 use timer::UairTimer;
+use common::Command;
 
 fn main() -> anyhow::Result<()> {
 	smol::block_on(amain())?;
@@ -17,16 +18,21 @@ async fn amain() -> anyhow::Result<()> {
 
 	loop {
 		match timer.start().or(listener.listen()).await? {
-			Event::Pause => {
+			Event::Command(Command::Pause) => {
 				timer.update_duration();
 				loop {
-					if let Event::Start = listener.listen().await? { break; }
+					if let Event::Command(Command::Resume) = listener.listen().await? { break; }
 				}
 			}
-			Event::Stop => break,
-			Event::Start => {}
+			Event::Finished => break,
+			_ => {}
 		}
 	}
 
 	Ok(())
+}
+
+pub enum Event {
+	Command(Command),
+	Finished,
 }

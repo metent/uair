@@ -2,7 +2,7 @@ use std::fs;
 use std::path::PathBuf;
 use smol::io::AsyncReadExt;
 use smol::net::unix::UnixListener;
-use common::Command;
+use super::Event;
 
 pub struct Listener {
 	path: PathBuf,
@@ -18,10 +18,7 @@ impl Listener {
 		let (mut stream, _) = self.listener.accept().await?;
 		let mut buffer = Vec::new();
 		stream.read_to_end(&mut buffer).await?;
-		match bincode::deserialize::<Command>(&mut buffer)? {
-			Command::Pause => Ok(Event::Pause),
-			Command::Resume => Ok(Event::Start),
-		}
+		Ok(Event::Command(bincode::deserialize(&mut buffer)?))
 	}
 }
 
@@ -29,10 +26,4 @@ impl Drop for Listener {
 	fn drop(&mut self) {
 		_ = fs::remove_file(&self.path);
 	}
-}
-
-pub enum Event {
-	Pause,
-	Stop,
-	Start,
 }
