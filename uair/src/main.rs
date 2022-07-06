@@ -18,10 +18,13 @@ async fn amain() -> anyhow::Result<()> {
 
 	loop {
 		match timer.start().or(listener.listen()).await? {
-			Event::Command(Command::Pause) => {
+			Event::Command(Command::Pause | Command::Toggle) => {
 				timer.update_duration();
 				loop {
-					if let Event::Command(Command::Resume) = listener.listen().await? { break; }
+					match listener.listen().await? {
+						Event::Command(Command::Resume | Command::Toggle) => break,
+						_ => {}
+					}
 				}
 			}
 			Event::Finished => break,

@@ -4,4 +4,5 @@ use serde::{Serialize, Deserialize};
 pub enum Command {
 	Pause,
 	Resume,
+	Toggle,
 }

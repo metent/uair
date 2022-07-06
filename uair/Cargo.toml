@@ -8,9 +8,9 @@ edition = "2021"
 [dependencies]
 common = { path = "../common" }
 anyhow = "1.0.58"
+argwerk = "0.20.1"
 bincode = "1.3.3"
 config = "0.13.1"
 futures-lite = "1.12.0"
 humantime = "2.1.0"
-seahorse = "2.1.0"
 smol = "1.2.5"
