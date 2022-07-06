@@ -1,0 +1,3 @@
+[workspace]
+members = ["uair", "uairctl"]
+exclude = ["common"]
