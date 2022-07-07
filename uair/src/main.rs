@@ -2,6 +2,7 @@ mod config;
 mod server;
 mod timer;
 
+use std::env;
 use std::time::Duration;
 use futures_lite::{FutureExt, StreamExt};
 use signal_hook::consts::signal::*;
@@ -26,7 +27,8 @@ argwerk::define! {
 	/// An extensible pomodoro timer.
 	#[usage = "uair [OPTION]..."]
 	pub struct Args {
-		config_path: String,
+		config_path: String = env::var("HOME").unwrap_or("/root".into()) +
+			"/.config/uair/uair.ron",
 		help: bool,
 	}
 	/// Path to config file.
@@ -36,15 +38,6 @@ argwerk::define! {
 	/// Print this help.
 	["-h" | "--help"] => {
 		help = true;
-	}
-}
-
-impl Default for Args {
-	fn default() -> Self {
-		Args {
-			config_path: "~/.config/uair/uair.ron".into(),
-			help: false,
-		}
 	}
 }
 
