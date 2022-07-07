@@ -25,8 +25,8 @@ impl Listener {
 	pub async fn wait_for_resume(&self) -> anyhow::Result<()> {
 		loop {
 			match self.listen().await? {
-				Event::Command(Command::Resume | Command::Toggle) => (),
-				_ => continue,
+				Event::Command(Command::Resume | Command::Toggle) => return Ok(()),
+				_ => {},
 			}
 		}
 	}
