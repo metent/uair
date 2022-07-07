@@ -1,6 +1,7 @@
+use std::io::{self, Write};
 use std::time::{Duration, Instant};
 use smol::Timer;
-use super::Event;
+use super::app::Event;
 
 pub struct UairTimer {
 	duration: Duration,
@@ -16,6 +17,7 @@ impl UairTimer {
 	}
 
 	pub async fn start(&mut self) -> anyhow::Result<Event> {
+		let mut stdout = io::stdout();
 		let first_interval = Duration::from_nanos(self.duration.subsec_nanos().into());
 
 		self.started = Instant::now();
@@ -24,7 +26,11 @@ impl UairTimer {
 
 		while end <= dest {
 			Timer::at(end).await;
-			print!("{}{}{}", self.before, humantime::format_duration(dest - end), self.after);
+			write!(
+				stdout, "{}{}{}",
+				self.before, humantime::format_duration(dest - end), self.after
+			)?;
+			stdout.flush()?;
 			end += self.interval;
 		}
 
