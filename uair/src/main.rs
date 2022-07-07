@@ -3,7 +3,9 @@ mod server;
 mod timer;
 
 use std::time::Duration;
-use futures_lite::FutureExt;
+use futures_lite::{FutureExt, StreamExt};
+use signal_hook::consts::signal::*;
+use signal_hook_async_std::Signals;
 use common::Command;
 use crate::server::Listener;
 use crate::timer::UairTimer;
@@ -16,7 +18,7 @@ fn main() -> anyhow::Result<()> {
 		return Ok(());
 	}
 	let config = config::get(args)?;
-	smol::block_on(amain(config))?;
+	smol::block_on(amain(config).or(handle_signals()))?;
 	Ok(())
 }
 
@@ -47,8 +49,8 @@ impl Default for Args {
 }
 
 async fn amain(config: UairConfig) -> anyhow::Result<()> {
+	let listener = Listener::new("/tmp/uair.sock")?;
 	for session in config.sessions {
-		let listener = Listener::new("/tmp/uair.sock")?;
 		let mut timer = UairTimer::new(
 			session.duration,
 			Duration::from_secs(1),
@@ -78,4 +80,15 @@ async fn amain(config: UairConfig) -> anyhow::Result<()> {
 pub enum Event {
 	Command(Command),
 	Finished,
+}
+
+async fn handle_signals() -> anyhow::Result<()> {
+	let mut signals = Signals::new(&[SIGTERM, SIGINT, SIGQUIT])?;
+	while let Some(signal) = signals.next().await {
+		match signal {
+			SIGTERM | SIGINT | SIGQUIT => break,
+			_ => {},
+		}
+	}
+	Ok(())
 }
