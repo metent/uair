@@ -6,11 +6,13 @@ pub struct UairTimer {
 	duration: Duration,
 	interval: Duration,
 	started: Instant,
+	before: String,
+	after: String,
 }
 
 impl UairTimer {
-	pub fn new(duration: Duration, interval: Duration) -> Self {
-		UairTimer { duration, interval, started: Instant::now() }
+	pub fn new(duration: Duration, interval: Duration, before: String, after: String) -> Self {
+		UairTimer { duration, interval, started: Instant::now(), before, after }
 	}
 
 	pub async fn start(&mut self) -> anyhow::Result<Event> {
@@ -22,7 +24,7 @@ impl UairTimer {
 
 		while end <= dest {
 			Timer::at(end).await;
-			println!("{}", humantime::format_duration(dest - end));
+			print!("{}{}{}", self.before, humantime::format_duration(dest - end), self.after);
 			end += self.interval;
 		}
 

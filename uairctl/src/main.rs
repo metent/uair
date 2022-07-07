@@ -1,12 +1,11 @@
-use std::env;
 use std::os::unix::net::UnixStream;
 use std::io::Write;
 use common::Command;
 
 argwerk::define! {
-	/// An extensible pomodoro timer.
+	/// Command-line interface for controlling uair.
 	#[derive(Default)]
-	#[usage = "uair [OPTION]..."]
+	#[usage = "uairctl [OPTION]..."]
 	struct Args {
 		help: bool,
 		pause: bool,
