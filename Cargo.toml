@@ -6,6 +6,7 @@ edition = "2021"
 description = "An extensible pomodoro timer"
 license = "MIT"
 repository = "https://github.com/metent/uair/"
+keywords = ["pomodoro", "timer", "countdown", "cli", "productivity"]
 categories = ["command-line-utilities"]
 
 [dependencies]
