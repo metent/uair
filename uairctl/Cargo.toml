@@ -5,8 +5,6 @@ authors = ["Rishabh Das <rdas@tutanota.com>"]
 edition = "2021"
 description = "Command-line interface for controlling uair"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 common = { path = "../common" }
 argwerk = "0.20.1"

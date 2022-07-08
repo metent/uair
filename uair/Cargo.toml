@@ -1,9 +1,9 @@
 [package]
 name = "uair"
 version = "0.1.0"
+authors = ["Rishabh Das <rdas@tutanota.com>"]
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "Command-line interface for controlling uair"
 
 [dependencies]
 common = { path = "../common" }
