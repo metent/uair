@@ -21,17 +21,17 @@ fn main() -> anyhow::Result<()> {
 
 argwerk::define! {
 	/// An extensible pomodoro timer.
-	#[usage = "uair [OPTION]..."]
+	#[usage = "uair [options..]"]
 	pub struct Args {
 		config_path: String = env::var("HOME").unwrap_or("/root".into()) +
 			"/.config/uair/uair.ron",
 		help: bool,
 	}
-	/// Path to config file.
+	/// Specifies a config file.
 	["-c" | "--config", path] => {
 		config_path = path;
 	}
-	/// Print this help.
+	/// Show help message and quit.
 	["-h" | "--help"] => {
 		help = true;
 	}

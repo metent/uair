@@ -5,7 +5,7 @@ use common::Command;
 argwerk::define! {
 	/// Command-line interface for controlling uair.
 	#[derive(Default)]
-	#[usage = "uairctl [OPTION]..."]
+	#[usage = "uairctl [options..]"]
 	struct Args {
 		help: bool,
 		pause: bool,
@@ -19,7 +19,7 @@ argwerk::define! {
 	["-r" | "--resume"] => {
 		resume = true;
 	}
-	/// Print this help.
+	/// Show help message and quit.
 	["-h" | "--help"] => {
 		help = true;
 	}
