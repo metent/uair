@@ -1,6 +1,6 @@
 use std::os::unix::net::UnixStream;
 use std::io::Write;
-use common::Command;
+use uair::Command;
 
 argwerk::define! {
 	/// Command-line interface for controlling uair.

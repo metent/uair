@@ -2,7 +2,7 @@ use std::fs;
 use std::path::PathBuf;
 use smol::io::AsyncReadExt;
 use smol::net::unix::UnixListener;
-use common::Command;
+use uair::Command;
 use super::app::Event;
 
 pub struct Listener {

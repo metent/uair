@@ -1,6 +1,6 @@
 use std::time::Duration;
 use futures_lite::FutureExt;
-use common::Command;
+use uair::Command;
 use super::server::Listener;
 use super::timer::UairTimer;
 use super::config::UairConfig;
