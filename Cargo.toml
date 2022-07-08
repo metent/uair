@@ -4,6 +4,9 @@ version = "0.1.0"
 authors = ["Rishabh Das <rdas@tutanota.com>"]
 edition = "2021"
 description = "An extensible pomodoro timer"
+license = "MIT"
+repository = "https://github.com/metent/uair/"
+categories = ["command-line-utilities"]
 
 [dependencies]
 anyhow = "1.0.58"
