@@ -51,6 +51,27 @@ A list of sessions has to be provided in the top-level `sessions` key. Each sess
 * `before`: string which is printed before the remaining time string
 * `after`: string which is printed after the remaining time string
 
+The timer can be paused or resumed using the `uairctl` command. While the timer is running, pause using
+
+[source,sh]
+----
+uairctl -p
+----
+
+and resume using
+
+[source,sh]
+----
+uairctl -r
+----
+
+To toggle between pause and resume states, use both flags
+
+[source,sh]
+----
+uairctl -p -r
+----
+
 === Integration with polybar
 
 Include pomodoro module in the config.
@@ -71,7 +92,24 @@ Remember to include the module in the modules list.
 modules-right = filesystem uair pulseaudio xkeyboard memory cpu wlan eth date
 ----
 
-=== Simple terminal timer
+In order for it to be displayed, a newline should be printed after printing the remaining time.
+
+[source,ron]
+----
+(
+	sessions: [
+		(
+			name: "Work",
+			duration: "30m",
+			command: "notify-send 'Work Done!'",
+			before: "",
+			after: "\n",
+		),
+	]
+)
+----
+
+=== Simple CLI timer
 
 [source,ron]
 ----
@@ -88,9 +126,11 @@ modules-right = filesystem uair pulseaudio xkeyboard memory cpu wlan eth date
 )
 ----
 
+Run with:
+
 `clear && uair`
 
-=== Integration with yad
+=== GUI with yad
 
 [source,ron]
 ----
@@ -106,5 +146,7 @@ modules-right = filesystem uair pulseaudio xkeyboard memory cpu wlan eth date
 	]
 )
 ----
+
+Run with:
 
 `uair | yad --progress`
