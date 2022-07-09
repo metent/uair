@@ -1,3 +1,4 @@
+use std::process;
 use std::time::Duration;
 use futures_lite::FutureExt;
 use uair::Command;
@@ -26,6 +27,11 @@ pub async fn run(config: UairConfig) -> anyhow::Result<()> {
 				_ => {}
 			}
 		}
+
+		process::Command::new("sh")
+			.arg("-c")
+			.arg(session.command)
+			.spawn()?;
 	}
 
 	Ok(())
