@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::PathBuf;
-use smol::io::AsyncReadExt;
-use smol::net::unix::UnixListener;
+use async_net::unix::UnixListener;
+use futures_lite::AsyncReadExt;
 use uair::Command;
 use super::app::Event;
 

@@ -15,7 +15,7 @@ fn main() -> anyhow::Result<()> {
 		return Ok(());
 	}
 	let config = config::get(args)?;
-	smol::block_on(app::run(config).or(handle_signals()))?;
+	async_io::block_on(app::run(config).or(handle_signals()))?;
 	Ok(())
 }
 

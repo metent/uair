@@ -1,6 +1,6 @@
 use std::io::{self, Write};
 use std::time::{Duration, Instant};
-use smol::Timer;
+use async_io::Timer;
 use super::app::Event;
 
 pub struct UairTimer {
