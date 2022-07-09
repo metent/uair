@@ -22,7 +22,7 @@ uair is a minimal pomodoro timer for UNIX-like operating systems. Unlike other t
 
 # CONFIGURATION
 
-Configuration is done in RON. Default config path is $HOME/.config/uair/uair.ron. For information on the config file format, see uair(5).
+Configuration is done in TOML. Default config path is $HOME/.config/uair/uair.toml. For information on the config file format, see uair(5).
 
 # SEE ALSO
 

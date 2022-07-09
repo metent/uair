@@ -20,7 +20,7 @@ pub struct SessionConfig {
 
 pub fn get(args: Args) -> anyhow::Result<UairConfig> {
 	Ok(Config::builder()
-		.add_source(File::new(&args.config_path, FileFormat::Ron))
+		.add_source(File::new(&args.config_path, FileFormat::Toml))
 		.build()?
 		.try_deserialize::<UairConfig>()?
 	)

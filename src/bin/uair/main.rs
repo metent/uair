@@ -24,7 +24,7 @@ argwerk::define! {
 	#[usage = "uair [options..]"]
 	pub struct Args {
 		config_path: String = env::var("HOME").unwrap_or("/root".into()) +
-			"/.config/uair/uair.ron",
+			"/.config/uair/uair.toml",
 		help: bool,
 	}
 	/// Specifies a config file.

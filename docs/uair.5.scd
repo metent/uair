@@ -6,7 +6,7 @@ uair - configuration file
 
 # DESCRIPTION
 
-The number of pomodoro sessions and their properties can be specified by an uair configuration file in RON format. The top-level struct contains a 'sessions' key, to which a list of sessions must be assigned. Each session is a struct which contains keys listed in the following section.
+The number of pomodoro sessions and their properties can be specified by an uair configuration file in TOML format. The top-level struct contains a 'sessions' key, to which a list of sessions must be assigned. Each session is a object which contains keys listed in the following section.
 
 # SESSION PROPERTIES
 
