@@ -8,6 +8,16 @@
 - Keyboard-driven: Uses `uairctl` command-line utility for pausing/resuming the timer. It can be binded to a keyboard shortcut.
 - Resource-efficient: Uses concurrency instead of spawing multiple threads.
 
+## Installation
+
+Rust and cargo are currently required to be installed for installation. To install, simply run
+
+```
+cargo install uair
+```
+
+Make sure to include `$HOME/.cargo/bin` in the `PATH` variable.
+
 ## Usage
 
 Configuration is done in TOML. Default config path is `$HOME/.config/uair/uair.toml`.
