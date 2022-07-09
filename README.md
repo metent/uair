@@ -14,7 +14,7 @@ Configuration is done in TOML. Default config path is `$HOME/.config/uair/uair.t
 
 Example Config:
 
-```
+```toml
 [[sessions]]
 name = "Work"
 duration = "30m"
@@ -83,7 +83,7 @@ modules-right = filesystem uair pulseaudio xkeyboard memory cpu wlan eth date
 
 In order for it to be displayed, a newline should be printed after printing the remaining time.
 
-```
+```toml
 [[sessions]]
 name = "Work"
 duration = "30m"
@@ -94,7 +94,7 @@ after = "\n"
 
 ### Simple CLI timer
 
-```
+```toml
 [[sessions]]
 name = "Work"
 duration = "1h 30m"
@@ -105,11 +105,13 @@ after = "           "
 
 Run with:
 
-`clear && uair`
+```
+clear && uair
+```
 
 ### GUI with yad
 
-```
+```toml
 [[sessions]]
 name = "Work"
 duration = "1h 30m"
@@ -120,4 +122,6 @@ after = "\n"
 
 Run with:
 
-`uair | yad --progress`
+```
+uair | yad --progress
+```
