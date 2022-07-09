@@ -45,16 +45,16 @@ A list of sessions has to be provided in the top-level `sessions` key. Each sess
 - `before`: string which is printed before the remaining time string
 - `after`: string which is printed after the remaining time string
 
-The timer can be paused or resumed using the `uairctl` command. While the timer is running, pause using
-
-```
-uairctl -p
-```
-
-and resume using
+When `uair` is started, or a session is completed, the timer is in a paused state. In order to start the session, `uairctl` command must be used. Start the session by resuming the timer.
 
 ```
 uairctl -r
+```
+
+While the timer is running, pause using
+
+```
+uairctl -p
 ```
 
 To toggle between pause and resume states, use both flags
