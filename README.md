@@ -10,7 +10,29 @@
 
 ## Installation
 
-Rust and cargo are currently required to be installed for installation. To install, simply run
+### From Arch User Repository
+
+`uair` is [packaged](https://aur.archlinux.org/packages/uair) for the AUR. Use an AUR helper or `makepkg` to install.
+
+```
+paru -S uair
+```
+
+or
+
+```
+yay -S uair
+```
+
+or
+
+```
+git clone https://aur.archlinux.org/uair.git
+cd uair
+makepkg -si
+```
+
+### From crates.io
 
 ```
 cargo install uair
