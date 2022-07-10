@@ -102,7 +102,7 @@ Include pomodoro module in the config.
 ```ini
 [module/uair]
 type = custom/script
-exec = /home/rishabh/bin/uair
+exec = uair
 label = %output%
 tail = true
 ```
