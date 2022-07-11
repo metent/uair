@@ -47,35 +47,35 @@ Configuration is done in TOML. Default config path is `$HOME/.config/uair/uair.t
 Example Config:
 
 ```toml
+[defaults]
+before = ""
+after = "\n"
+
 [[sessions]]
 name = "Work"
 duration = "30m"
 command = "notify-send 'Work Done!'"
-before = ""
-after = "\n"
 
 [[sessions]]
 name = "Rest"
 duration = "5m"
 command = "notify-send 'Rest Done!'"
-before = ""
-after = "\n"
 
 [[sessions]]
 name = "Work, but harder"
 duration = "1h 30m"
 command = "notify-send 'Hard Work Done!'"
-before = ""
-after = "\n"
 ```
 
-A list of sessions has to be provided in the top-level `sessions` key. Each session is a struct with the following keys:
+A list of sessions has to be provided in the `sessions` key. Each session is a table with the following keys:
 
 - `name`: name of the session
 - `duration`: duration of the session
 - `command`: command which is run when the session finishes
 - `before`: string which is printed before the remaining time string
 - `after`: string which is printed after the remaining time string
+
+If a property of a session in the array is unspecified, the default value specified in the `defaults` section is used instead.
 
 When `uair` is started, or a session is completed, the timer is in a paused state. In order to start the session, `uairctl` command must be used. Start the session by resuming the timer.
 
@@ -116,23 +116,27 @@ modules-right = filesystem uair pulseaudio xkeyboard memory cpu wlan eth date
 In order for it to be displayed, a newline should be printed after printing the remaining time.
 
 ```toml
+[defaults]
+before = ""
+after = "\n"
+
 [[sessions]]
 name = "Work"
 duration = "30m"
 command = "notify-send 'Work Done!'"
-before = ""
-after = "\n"
 ```
 
 ### Simple CLI timer
 
 ```toml
+[defaults]
+before = "\r"
+after = "           "
+
 [[sessions]]
 name = "Work"
 duration = "1h 30m"
 command = "notify-send 'Work Done!'"
-before = "\r"
-after = "           "
 ```
 
 Run with:
@@ -144,12 +148,14 @@ clear && uair
 ### GUI with yad
 
 ```toml
+[defaults]
+before = "#"
+after = "\n"
+
 [[sessions]]
 name = "Work"
 duration = "1h 30m"
 command = "notify-send 'Work Done!'"
-before = "#"
-after = "\n"
 ```
 
 Run with:
