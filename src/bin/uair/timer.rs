@@ -3,16 +3,16 @@ use std::time::{Duration, Instant};
 use async_io::Timer;
 use super::app::Event;
 
-pub struct UairTimer {
+pub struct UairTimer<'a> {
 	duration: Duration,
 	interval: Duration,
 	started: Instant,
-	before: String,
-	after: String,
+	before: &'a str,
+	after: &'a str,
 }
 
-impl UairTimer {
-	pub fn new(duration: Duration, interval: Duration, before: String, after: String) -> Self {
+impl<'a> UairTimer<'a> {
+	pub fn new(duration: Duration, interval: Duration, before: &'a str, after: &'a str) -> Self {
 		UairTimer { duration, interval, started: Instant::now(), before, after }
 	}
 

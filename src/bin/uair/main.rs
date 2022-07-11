@@ -7,6 +7,7 @@ use std::env;
 use futures_lite::{FutureExt, StreamExt};
 use signal_hook::consts::signal::*;
 use signal_hook_async_std::Signals;
+use crate::config::UairConfig;
 
 fn main() -> anyhow::Result<()> {
 	let args = Args::args()?;
@@ -14,7 +15,7 @@ fn main() -> anyhow::Result<()> {
 		println!("{}", Args::help());
 		return Ok(());
 	}
-	let config = config::get(args)?;
+	let config = UairConfig::get(args)?;
 	async_io::block_on(app::run(config).or(handle_signals()))?;
 	Ok(())
 }

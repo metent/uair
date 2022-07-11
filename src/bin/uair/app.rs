@@ -8,12 +8,13 @@ use super::config::UairConfig;
 
 pub async fn run(config: UairConfig) -> anyhow::Result<()> {
 	let listener = Listener::new("/tmp/uair.sock")?;
-	for session in config.sessions {
+	let mut i = 0;
+	while i < config.nb_sessions() {
 		let mut timer = UairTimer::new(
-			session.duration,
+			config.duration(i),
 			Duration::from_secs(1),
-			session.before,
-			session.after
+			config.before(i),
+			config.after(i)
 		);
 
 		listener.wait_for_resume().await?;
@@ -30,8 +31,10 @@ pub async fn run(config: UairConfig) -> anyhow::Result<()> {
 
 		process::Command::new("sh")
 			.arg("-c")
-			.arg(session.command)
+			.arg(config.command(i))
 			.spawn()?;
+
+		i += 1;
 	}
 
 	Ok(())
