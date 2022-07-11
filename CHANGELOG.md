@@ -1,3 +1,7 @@
+### Unreleased
+
+- Default properties for sessions can now be configured.
+
 ### v0.1.2
 
 - Command mentioned in the config for a session should now run as intended.
