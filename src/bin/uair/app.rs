@@ -17,7 +17,7 @@ pub async fn run(config: UairConfig) -> anyhow::Result<()> {
 			config.after(i)
 		);
 
-		listener.wait_for_resume().await?;
+		if !config.autostart(i) { listener.wait_for_resume().await?; }
 		loop {
 			match timer.start().or(listener.listen()).await? {
 				Event::Command(Command::Pause | Command::Toggle) => {

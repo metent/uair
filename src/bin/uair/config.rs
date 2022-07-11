@@ -50,6 +50,13 @@ impl UairConfig {
 		}
 	}
 
+	pub fn autostart(&self, i: usize) -> bool {
+		match &self.sessions[i].autostart {
+			Some(autostart) => *autostart,
+			None => self.defaults.autostart,
+		}
+	}
+
 	pub fn nb_sessions(&self) -> usize {
 		self.sessions.len()
 	}
@@ -68,6 +75,8 @@ pub struct Defaults {
 	before: String,
 	#[serde(default = "Defaults::after")]
 	after: String,
+	#[serde(default = "Defaults::autostart")]
+	autostart: bool,
 }
 
 impl Defaults {
@@ -76,6 +85,7 @@ impl Defaults {
 	fn command() -> String { "notify-send 'Session Completed!'".into() }
 	fn before() -> String { "".into() }
 	fn after() -> String { "\n".into() }
+	fn autostart() -> bool { false }
 }
 
 impl Default for Defaults {
@@ -86,6 +96,7 @@ impl Default for Defaults {
 			command: Defaults::command(),
 			before: Defaults::before(),
 			after: Defaults::after(),
+			autostart: Defaults::autostart(),
 		}
 	}
 }
@@ -99,4 +110,5 @@ pub struct SessionConfig {
 	command: Option<String>,
 	before: Option<String>,
 	after: Option<String>,
+	autostart: Option<bool>,
 }

@@ -31,6 +31,9 @@ The number of pomodoro sessions and their properties can be specified by an uair
 *after*
 	String which is printed after the remaining time string.
 
+*autostart*
+	Boolean value (true or false) which dictates whether the session automatically starts.
+
 # SEE ALSO
 
 *uair*(1) *uairctl*(1)

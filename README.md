@@ -74,8 +74,9 @@ A list of sessions has to be provided in the `sessions` key. Each session is a t
 - `command`: command which is run when the session finishes
 - `before`: string which is printed before the remaining time string
 - `after`: string which is printed after the remaining time string
+- `autostart`: boolean value (true or false) which dictates whether the session automatically starts.
 
-If a property of a session in the array is unspecified, the default value specified in the `defaults` section is used instead.
+If a property of a session in the array is unspecified, the default value specified in the `defaults` section is used instead. If the property is not mentioned in the default section too, then the propert is sourced from a list of hard-coded defaults.
 
 When `uair` is started, or a session is completed, the timer is in a paused state. In order to start the session, `uairctl` command must be used. Start the session by resuming the timer.
 
