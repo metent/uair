@@ -2,12 +2,13 @@ use std::process;
 use std::time::Duration;
 use futures_lite::FutureExt;
 use uair::Command;
+use super::Args;
 use super::server::Listener;
 use super::timer::UairTimer;
 use super::config::UairConfig;
 
-pub async fn run(config: UairConfig) -> anyhow::Result<()> {
-	let listener = Listener::new("/tmp/uair.sock")?;
+pub async fn run(args: Args, config: UairConfig) -> anyhow::Result<()> {
+	let listener = Listener::new(&args.socket_path)?;
 	let mut i = 0;
 	while i < config.nb_sessions() {
 		let mut timer = UairTimer::new(
