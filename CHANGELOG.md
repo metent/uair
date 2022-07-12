@@ -1,3 +1,8 @@
+### Unreleased
+
+- Config file and socket file now follow XDG Base Directory Specification.
+- New `uair` and `uairctl` command-line flag: -s or --socket. It specifies `uair` server socket path.
+
 ### v0.2.0
 
 - Default properties for sessions can now be configured.

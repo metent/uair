@@ -42,7 +42,11 @@ Make sure to include `$HOME/.cargo/bin` in the `PATH` variable.
 
 ## Usage
 
-Configuration is done in TOML. Default config path is `$HOME/.config/uair/uair.toml`.
+Configuration is done in TOML. If a config file is not specified by the `-c` flag, it is sourced according to the XDG Base Directory Specification, i.e. it looks for the config file in the following order, until it successfully finds one.
+
+- $XDG_CONFIG_HOME/uair/uair.toml
+- $HOME/.config/uair/uair.toml
+- ~/.config/uair/uair.toml
 
 Example Config:
 

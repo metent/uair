@@ -16,6 +16,9 @@ uairctl - Command-line application for controlling uair
 *-r, --resume*
 	Resumes the timer.
 
+*-s, --socket*
+	Specifies a socket file.
+
 *-h, --help*
 	Show help message and quit.
 
