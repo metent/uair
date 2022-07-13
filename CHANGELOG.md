@@ -2,6 +2,7 @@
 
 - Config file and socket file now follow XDG Base Directory Specification.
 - New `uair` and `uairctl` command-line flag: -s or --socket. It specifies `uair` server socket path.
+- New config file options: `loop_on_end`, `pause_at_start` and `startup_text`.
 
 ### v0.2.0
 
