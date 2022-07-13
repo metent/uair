@@ -15,17 +15,26 @@ impl Listener {
 		Ok(Listener { path: path.into(), listener: UnixListener::bind(path)? })
 	}
 
-	pub async fn listen(&self) -> anyhow::Result<Event> {
+	async fn listen(&self) -> anyhow::Result<Command> {
 		let (mut stream, _) = self.listener.accept().await?;
 		let mut buffer = Vec::new();
 		stream.read_to_end(&mut buffer).await?;
-		Ok(Event::Command(bincode::deserialize(&mut buffer)?))
+		Ok(bincode::deserialize(&mut buffer)?)
 	}
 
-	pub async fn wait_for_resume(&self) -> anyhow::Result<()> {
+	pub async fn wait_while_running(&self) -> anyhow::Result<Event> {
 		loop {
 			match self.listen().await? {
-				Event::Command(Command::Resume | Command::Toggle) => return Ok(()),
+				Command::Pause | Command::Toggle => return Ok(Event::Pause),
+				_ => {},
+			}
+		}
+	}
+
+	pub async fn wait_while_stopped(&self) -> anyhow::Result<Event> {
+		loop {
+			match self.listen().await? {
+				Command::Resume | Command::Toggle => return Ok(Event::Resume),
 				_ => {},
 			}
 		}

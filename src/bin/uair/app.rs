@@ -2,7 +2,6 @@ use std::io::{self, Write};
 use std::process;
 use std::time::Duration;
 use futures_lite::FutureExt;
-use uair::Command;
 use super::Args;
 use super::server::Listener;
 use super::timer::UairTimer;
@@ -14,7 +13,7 @@ pub async fn run(args: Args, config: UairConfig) -> anyhow::Result<()> {
 	stdout.flush()?;
 
 	let listener = Listener::new(&args.socket_path)?;
-	if config.pause_at_start { listener.wait_for_resume().await?; }
+	if config.pause_at_start { listener.wait_while_stopped().await?; }
 
 	let mut i = 0;
 	while i < config.nb_sessions() {
@@ -25,12 +24,12 @@ pub async fn run(args: Args, config: UairConfig) -> anyhow::Result<()> {
 			config.after(i)
 		);
 
-		if !config.autostart(i) { listener.wait_for_resume().await?; }
+		if !config.autostart(i) { listener.wait_while_stopped().await?; }
 		loop {
-			match timer.start().or(listener.listen()).await? {
-				Event::Command(Command::Pause | Command::Toggle) => {
+			match timer.start().or(listener.wait_while_running()).await? {
+				Event::Pause => {
 					timer.update_duration();
-					listener.wait_for_resume().await?;
+					listener.wait_while_stopped().await?;
 				}
 				Event::Finished => break,
 				_ => {}
@@ -53,6 +52,7 @@ pub async fn run(args: Args, config: UairConfig) -> anyhow::Result<()> {
 }
 
 pub enum Event {
-	Command(Command),
+	Pause,
+	Resume,
 	Finished,
 }
