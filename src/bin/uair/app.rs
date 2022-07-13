@@ -1,3 +1,4 @@
+use std::io::{self, Write};
 use std::process;
 use std::time::Duration;
 use futures_lite::FutureExt;
@@ -8,7 +9,13 @@ use super::timer::UairTimer;
 use super::config::UairConfig;
 
 pub async fn run(args: Args, config: UairConfig) -> anyhow::Result<()> {
+	let mut stdout = io::stdout();
+	write!(stdout, "{}", config.startup_text)?;
+	stdout.flush()?;
+
 	let listener = Listener::new(&args.socket_path)?;
+	if config.pause_at_start { listener.wait_for_resume().await?; }
+
 	let mut i = 0;
 	while i < config.nb_sessions() {
 		let mut timer = UairTimer::new(
@@ -30,12 +37,16 @@ pub async fn run(args: Args, config: UairConfig) -> anyhow::Result<()> {
 			}
 		}
 
-		process::Command::new("sh")
-			.arg("-c")
-			.arg(config.command(i))
-			.spawn()?;
+		let command = config.command(i);
+		if !command.is_empty() {
+			process::Command::new("sh")
+				.arg("-c")
+				.arg(command)
+				.spawn()?;
+		}
 
 		i += 1;
+		if config.loop_on_end { i %= config.nb_sessions(); }
 	}
 
 	Ok(())

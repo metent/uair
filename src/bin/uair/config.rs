@@ -6,6 +6,12 @@ use super::Args;
 #[derive(Serialize, Deserialize)]
 pub struct UairConfig {
 	#[serde(default)]
+	pub loop_on_end: bool,
+	#[serde(default)]
+	pub pause_at_start: bool,
+	#[serde(default)]
+	pub startup_text: String,
+	#[serde(default)]
 	pub defaults: Defaults,
 	pub sessions: Vec<SessionConfig>,
 }

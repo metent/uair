@@ -6,7 +6,16 @@ uair - configuration file
 
 # DESCRIPTION
 
-The number of pomodoro sessions and their properties can be specified by an uair configuration file in TOML format. A config file consists of two keys:
+The number of pomodoro sessions and their properties can be specified by an uair configuration file in TOML format. A config file consists of the following keys:
+
+*loop_on_end*
+	This is a boolean value (true or false) which controls whether uair repeats all sessions after the completion of the last session.
+
+*pause_at_start*
+	This is a boolean value (true or false) which controls whether uair is at paused state at startup.
+
+*startup_text*
+	It specifies the text to be printed at startup.
 
 *defaults*
 	This is a table containing default session properties. If a session has a property unspecified, the value of the corresponding key in this table is used instead.
