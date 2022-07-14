@@ -5,55 +5,31 @@ mod timer;
 
 use std::env;
 use futures_lite::{FutureExt, StreamExt};
+use gumdrop::Options;
 use signal_hook::consts::signal::*;
 use signal_hook_async_std::Signals;
+use uair::get_socket_path;
 use crate::config::UairConfig;
 
 fn main() -> anyhow::Result<()> {
-	let args = Args::args()?;
-	if args.help {
-		println!("{}", Args::help());
-		return Ok(());
-	}
+	let mut args = Args::parse_args_default_or_exit();
+	if args.config.is_empty() { args.config = get_config_path() }
+	if args.socket.is_empty() { args.socket = get_socket_path() }
+
 	let config = UairConfig::get(&args)?;
 	async_io::block_on(app::run(args, config).or(handle_signals()))?;
 	Ok(())
 }
 
-argwerk::define! {
-	/// An extensible pomodoro timer.
-	#[usage = "uair [options..]"]
-	pub struct Args {
-		config_path: String = if let Ok(xdg_config_home) = env::var("XDG_CONFIG_HOME") {
-			xdg_config_home + "/uair/uair.toml"
-		} else if let Ok(home) = env::var("HOME") {
-			home + "/.config/uair/uair.toml"
-		} else {
-			"~/.config/uair/uair.toml".into()
-		},
-		socket_path: String = if let Ok(xdg_runtime_dir) = env::var("XDG_RUNTIME_DIR") {
-			xdg_runtime_dir + "/uair.sock"
-		} else if let Ok(tmp_dir) = env::var("TMPDIR") {
-			tmp_dir + "/uair.sock"
-		} else {
-			"/tmp/uair.sock".into()
-		},
-		help: bool,
-	}
-	/// Specifies a config file.
-	["-c" | "--config", path] => {
-		config_path = path;
-	}
-	/// Specifies a socket file.
-	["-s" | "--socket", path] => {
-		socket_path = path;
-	}
-	/// Show help message and quit.
-	["-h" | "--help"] => {
-		help = true;
-	}
+#[derive(Options)]
+pub struct Args {
+	#[options(help = "Show help message and quit.")]
+	help: bool,
+	#[options(help = "Specifies a config file.")]
+	config: String,
+	#[options(help = "Specifies a socket file.")]
+	socket: String,
 }
-
 
 async fn handle_signals() -> anyhow::Result<()> {
 	let mut signals = Signals::new(&[SIGTERM, SIGINT, SIGQUIT])?;
@@ -64,4 +40,14 @@ async fn handle_signals() -> anyhow::Result<()> {
 		}
 	}
 	Ok(())
+}
+
+fn get_config_path() -> String {
+	if let Ok(xdg_config_home) = env::var("XDG_CONFIG_HOME") {
+		xdg_config_home + "/uair/uair.toml"
+	} else if let Ok(home) = env::var("HOME") {
+		home + "/.config/uair/uair.toml"
+	} else {
+		"~/.config/uair/uair.toml".into()
+	}
 }

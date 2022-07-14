@@ -12,7 +12,7 @@ pub async fn run(args: Args, config: UairConfig) -> anyhow::Result<()> {
 	write!(stdout, "{}", config.startup_text)?;
 	stdout.flush()?;
 
-	let listener = Listener::new(&args.socket_path)?;
+	let listener = Listener::new(&args.socket)?;
 	if config.pause_at_start { listener.wait_while_stopped().await?; }
 
 	let mut i = 0;

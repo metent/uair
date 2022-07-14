@@ -85,19 +85,19 @@ If a property of a session in the array is unspecified, the default value specif
 When `uair` is started, or a session is completed, the timer is in a paused state. In order to start the session, `uairctl` command must be used. Start the session by resuming the timer.
 
 ```
-uairctl -r
+uairctl resume
 ```
 
 While the timer is running, pause using
 
 ```
-uairctl -p
+uairctl pause
 ```
 
-To toggle between pause and resume states, use both flags
+To toggle between pause and resume states, use
 
 ```
-uairctl -p -r
+uairctl toggle
 ```
 
 ### Integration with polybar

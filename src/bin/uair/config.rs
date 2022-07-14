@@ -18,7 +18,7 @@ pub struct UairConfig {
 
 impl UairConfig {
 	pub fn get(args: &Args) -> anyhow::Result<Self> {
-		Ok(toml::from_str(&fs::read_to_string(&args.config_path)?)?)
+		Ok(toml::from_str(&fs::read_to_string(&args.config)?)?)
 	}
 
 	pub fn name(&self, i: usize) -> &str {

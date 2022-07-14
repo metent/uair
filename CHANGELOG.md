@@ -4,6 +4,11 @@
 - New `uair` and `uairctl` command-line flag: -s or --socket. It specifies `uair` server socket path.
 - New config file options: `loop_on_end`, `pause_at_start` and `startup_text`.
 - Bug Fix: resuming while timer is running should now be a no-op.
+- New `uairctl` subcommands: `pause`, `resume` and `toggle`.
+
+#### Deprecated
+
+- `-p` and `-r` flags. Use `pause`, `resume` and `toggle` subcommands instead.
 
 ### v0.2.0
 
