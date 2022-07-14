@@ -22,19 +22,23 @@ impl Listener {
 		Ok(bincode::deserialize(&mut buffer)?)
 	}
 
-	pub async fn wait_while_running(&self) -> anyhow::Result<Event> {
+	pub async fn wait_while_running(&self, index: usize) -> anyhow::Result<Event> {
 		loop {
 			match self.listen().await? {
 				Command::Pause | Command::Toggle => return Ok(Event::Pause),
+				Command::Next => return Ok(Event::Next),
+				Command::Prev if index != 0 => return Ok(Event::Prev),
 				_ => {},
 			}
 		}
 	}
 
-	pub async fn wait_while_stopped(&self) -> anyhow::Result<Event> {
+	pub async fn wait_while_stopped(&self, index: usize) -> anyhow::Result<Event> {
 		loop {
 			match self.listen().await? {
 				Command::Resume | Command::Toggle => return Ok(Event::Resume),
+				Command::Next => return Ok(Event::Next),
+				Command::Prev if index != 0 => return Ok(Event::Prev),
 				_ => {},
 			}
 		}

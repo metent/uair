@@ -46,6 +46,10 @@ enum Command {
 	Resume(NoArgs),
 	#[options(help = "Toggle the state of the timer.")]
 	Toggle(NoArgs),
+	#[options(help = "Jump to the next session.")]
+	Next(NoArgs),
+	#[options(help = "Jump to the previous session")]
+	Prev(NoArgs),
 }
 
 #[derive(Options, Serialize, Deserialize)]

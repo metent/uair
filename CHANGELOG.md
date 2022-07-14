@@ -5,6 +5,7 @@
 - New config file options: `loop_on_end`, `pause_at_start` and `startup_text`.
 - Bug Fix: resuming while timer is running should now be a no-op.
 - New `uairctl` subcommands: `pause`, `resume` and `toggle`.
+- New `uairctl` subcommands: `next` and `prev`, to jump to next and previous sessions.
 
 #### Deprecated
 

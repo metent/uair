@@ -6,6 +6,8 @@ pub enum Command {
 	Pause,
 	Resume,
 	Toggle,
+	Next,
+	Prev,
 }
 
 pub fn get_socket_path() -> String {

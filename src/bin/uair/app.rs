@@ -13,7 +13,7 @@ pub async fn run(args: Args, config: UairConfig) -> anyhow::Result<()> {
 	stdout.flush()?;
 
 	let listener = Listener::new(&args.socket)?;
-	if config.pause_at_start { listener.wait_while_stopped().await?; }
+	if config.pause_at_start { listener.wait_while_stopped(0).await?; }
 
 	let mut i = 0;
 	while i < config.nb_sessions() {
@@ -24,28 +24,41 @@ pub async fn run(args: Args, config: UairConfig) -> anyhow::Result<()> {
 			config.after(i)
 		);
 
-		if !config.autostart(i) { listener.wait_while_stopped().await?; }
+		if !config.autostart(i) { listener.wait_while_stopped(i).await?; }
 		loop {
-			match timer.start().or(listener.wait_while_running()).await? {
+			match timer.start().or(listener.wait_while_running(i)).await? {
 				Event::Pause => {
 					timer.update_duration();
-					listener.wait_while_stopped().await?;
+					listener.wait_while_stopped(i).await?;
 				}
-				Event::Finished => break,
+				Event::Finished => {
+					let command = config.command(i);
+					if !command.is_empty() {
+						process::Command::new("sh")
+							.arg("-c")
+							.arg(command)
+							.spawn()?;
+					}
+					i += 1;
+					if config.loop_on_end { i %= config.nb_sessions(); }
+					break;
+				}
+				Event::Next => {
+					i += 1;
+					if config.loop_on_end { i %= config.nb_sessions(); }
+					break;
+				}
+				Event::Prev => {
+					if i != 0 {
+						i -= 1;
+					} else if config.loop_on_end {
+						i = config.nb_sessions() - 1;
+					}
+				}
 				_ => {}
 			}
 		}
 
-		let command = config.command(i);
-		if !command.is_empty() {
-			process::Command::new("sh")
-				.arg("-c")
-				.arg(command)
-				.spawn()?;
-		}
-
-		i += 1;
-		if config.loop_on_end { i %= config.nb_sessions(); }
 	}
 
 	Ok(())
@@ -55,4 +68,6 @@ pub enum Event {
 	Pause,
 	Resume,
 	Finished,
+	Next,
+	Prev,
 }
