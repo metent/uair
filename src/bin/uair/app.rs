@@ -19,7 +19,7 @@ impl App {
 	pub fn new(args: Args, config: Config) -> anyhow::Result<Self> {
 		Ok(App {
 			listener: Listener::new(&args.socket)?,
-			ptr: SessionPointer::new(config.sessions, config.loop_on_end).ok_or(anyhow::anyhow!("hui"))?,
+			ptr: SessionPointer::new(config.sessions, config.loop_on_end).unwrap(),
 			startup_text: config.startup_text,
 			pause_at_start: config.pause_at_start,
 			done: false,
