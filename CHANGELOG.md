@@ -1,4 +1,4 @@
-### Unreleased
+### v0.3.0
 
 - Config file and socket file now follow XDG Base Directory Specification.
 - New `uair` and `uairctl` command-line flag: -s or --socket. It specifies `uair` server socket path.
