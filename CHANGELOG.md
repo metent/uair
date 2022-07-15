@@ -9,7 +9,7 @@
 
 #### Deprecated
 
-- `-p` and `-r` flags. Use `pause`, `resume` and `toggle` subcommands instead.
+- `-p` and `-r` `uairctl` flags. Use `pause`, `resume` and `toggle` subcommands instead.
 
 ### v0.2.0
 
