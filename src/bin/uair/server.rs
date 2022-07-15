@@ -8,22 +8,23 @@ use super::app::Event;
 pub struct Listener {
 	path: PathBuf,
 	listener: UnixListener,
+	buffer: Vec<u8>,
 }
 
 impl Listener {
 	pub fn new(path: &str) -> anyhow::Result<Listener> {
-		Ok(Listener { path: path.into(), listener: UnixListener::bind(path)? })
+		Ok(Listener { path: path.into(), listener: UnixListener::bind(path)?, buffer: Vec::new() })
 	}
 
-	async fn listen(&self) -> anyhow::Result<Command> {
+	async fn listen(&mut self) -> anyhow::Result<Command> {
 		let (mut stream, _) = self.listener.accept().await?;
-		let mut buffer = Vec::new();
-		stream.read_to_end(&mut buffer).await?;
-		Ok(bincode::deserialize(&mut buffer)?)
+		self.buffer.clear();
+		stream.read_to_end(&mut self.buffer).await?;
+		Ok(bincode::deserialize(&mut self.buffer)?)
 	}
 
 	pub async fn wait(
-		&self,
+		&mut self,
 		running: bool,
 		disable_prev: bool,
 		disable_next: bool
