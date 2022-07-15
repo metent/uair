@@ -1,3 +1,7 @@
+### Unreleased
+
+- `uair` performance improvement: prevent allocation of buffer each time a command is received.
+
 ### v0.3.0
 
 - Config file and socket file now follow XDG Base Directory Specification.
