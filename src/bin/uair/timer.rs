@@ -3,20 +3,18 @@ use std::time::{Duration, Instant};
 use async_io::Timer;
 use super::app::Event;
 
-pub struct UairTimer<'a> {
+pub struct UairTimer {
 	duration: Duration,
 	interval: Duration,
 	started: Instant,
-	before: &'a str,
-	after: &'a str,
 }
 
-impl<'a> UairTimer<'a> {
-	pub fn new(duration: Duration, interval: Duration, before: &'a str, after: &'a str) -> Self {
-		UairTimer { duration, interval, started: Instant::now(), before, after }
+impl UairTimer {
+	pub fn new(duration: Duration, interval: Duration) -> Self {
+		UairTimer { duration, interval, started: Instant::now() }
 	}
 
-	pub async fn start(&mut self) -> anyhow::Result<Event> {
+	pub async fn start(&mut self, before: &str, after: &str) -> anyhow::Result<Event> {
 		let mut stdout = io::stdout();
 		let first_interval = Duration::from_nanos(self.duration.subsec_nanos().into());
 
@@ -28,7 +26,7 @@ impl<'a> UairTimer<'a> {
 			Timer::at(end).await;
 			write!(
 				stdout, "{}{}{}",
-				self.before, humantime::format_duration(dest - end), self.after
+				before, humantime::format_duration(dest - end), after
 			)?;
 			stdout.flush()?;
 			end += self.interval;

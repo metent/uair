@@ -9,15 +9,16 @@ use gumdrop::Options;
 use signal_hook::consts::signal::*;
 use signal_hook_async_std::Signals;
 use uair::get_socket_path;
-use crate::config::UairConfig;
+use crate::app::App;
+use crate::config::ConfigBuilder;
 
 fn main() -> anyhow::Result<()> {
 	let mut args = Args::parse_args_default_or_exit();
 	if args.config.is_empty() { args.config = get_config_path() }
 	if args.socket.is_empty() { args.socket = get_socket_path() }
 
-	let config = UairConfig::get(&args)?;
-	async_io::block_on(app::run(args, config).or(handle_signals()))?;
+	let config = ConfigBuilder::parse(&args)?.build();
+	async_io::block_on(App::new(args, config)?.run().or(handle_signals()))?;
 	Ok(())
 }
 

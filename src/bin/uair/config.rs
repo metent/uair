@@ -3,68 +3,54 @@ use std::time::Duration;
 use serde::{Serialize, Deserialize};
 use super::Args;
 
-#[derive(Serialize, Deserialize)]
-pub struct UairConfig {
-	#[serde(default)]
+pub struct Config {
 	pub loop_on_end: bool,
-	#[serde(default)]
 	pub pause_at_start: bool,
-	#[serde(default)]
 	pub startup_text: String,
-	#[serde(default)]
-	pub defaults: Defaults,
 	pub sessions: Vec<SessionConfig>,
 }
 
-impl UairConfig {
-	pub fn get(args: &Args) -> anyhow::Result<Self> {
+pub struct SessionConfig {
+	pub name: String,
+	pub duration: Duration,
+	pub command: String,
+	pub before: String,
+	pub after: String,
+	pub autostart: bool,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ConfigBuilder {
+	#[serde(default)]
+	loop_on_end: bool,
+	#[serde(default)]
+	pause_at_start: bool,
+	#[serde(default)]
+	startup_text: String,
+	#[serde(default)]
+	defaults: Defaults,
+	sessions: Vec<SessionConfigBuilder>,
+}
+
+impl ConfigBuilder {
+	pub fn parse(args: &Args) -> anyhow::Result<Self> {
 		Ok(toml::from_str(&fs::read_to_string(&args.config)?)?)
 	}
 
-	pub fn name(&self, i: usize) -> &str {
-		match &self.sessions[i].name {
-			Some(name) => &name,
-			None => &self.defaults.name,
+	pub fn build(self) -> Config {
+		Config {
+			loop_on_end: self.loop_on_end,
+			pause_at_start: self.pause_at_start,
+			startup_text: self.startup_text,
+			sessions: self.sessions.into_iter().map(|s| SessionConfig {
+				name: s.name.unwrap_or_else(|| self.defaults.name.clone()),
+				duration: s.duration.unwrap_or_else(|| self.defaults.duration.clone()),
+				command: s.command.unwrap_or_else(|| self.defaults.command.clone()),
+				before: s.before.unwrap_or_else(|| self.defaults.before.clone()),
+				after: s.after.unwrap_or_else(|| self.defaults.after.clone()),
+				autostart: s.autostart.unwrap_or_else(|| self.defaults.autostart.clone()),
+			}).collect(),
 		}
-	}
-
-	pub fn duration(&self, i: usize) -> Duration {
-		match &self.sessions[i].duration {
-			Some(duration) => *duration,
-			None => self.defaults.duration,
-		}
-	}
-
-	pub fn command(&self, i: usize) -> &str {
-		match &self.sessions[i].command {
-			Some(command) => &command,
-			None => &self.defaults.command,
-		}
-	}
-
-	pub fn before(&self, i: usize) -> &str {
-		match &self.sessions[i].before {
-			Some(before) => &before,
-			None => &self.defaults.before,
-		}
-	}
-
-	pub fn after(&self, i: usize) -> &str {
-		match &self.sessions[i].after {
-			Some(after) => &after,
-			None => &self.defaults.after,
-		}
-	}
-
-	pub fn autostart(&self, i: usize) -> bool {
-		match &self.sessions[i].autostart {
-			Some(autostart) => *autostart,
-			None => self.defaults.autostart,
-		}
-	}
-
-	pub fn nb_sessions(&self) -> usize {
-		self.sessions.len()
 	}
 }
 
@@ -108,7 +94,7 @@ impl Default for Defaults {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct SessionConfig {
+struct SessionConfigBuilder {
 	name: Option<String>,
 	#[serde(with = "humantime_serde")]
 	#[serde(default)]
