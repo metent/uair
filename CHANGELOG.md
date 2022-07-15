@@ -1,4 +1,4 @@
-### Unreleased
+### v0.3.1
 
 - `uair` performance improvement: prevent allocation of buffer each time a command is received.
 
