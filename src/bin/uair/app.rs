@@ -49,9 +49,9 @@ impl App {
 
 	async fn run_session(&mut self, timer: &mut UairTimer) -> anyhow::Result<bool> {
 		let (curr, first, last) = (self.ptr.curr(), self.ptr.is_first(), self.ptr.is_last());
-		let SessionConfig { before, after, command, .. } = &curr;
+		let SessionConfig { before, after, format, command, .. } = &curr;
 
-		match timer.start(before, after).or(self.listener.wait(true, first, last)).await? {
+		match timer.start(format, before, after).or(self.listener.wait(true, first, last)).await? {
 			Event::Pause => {
 				timer.update_duration();
 				self.wait().await

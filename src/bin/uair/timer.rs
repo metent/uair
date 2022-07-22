@@ -1,7 +1,7 @@
-use std::io::{self, Write};
 use std::time::{Duration, Instant};
 use async_io::Timer;
 use super::app::Event;
+use super::config::OutputFormat;
 
 pub struct UairTimer {
 	duration: Duration,
@@ -14,8 +14,7 @@ impl UairTimer {
 		UairTimer { duration, interval, started: Instant::now() }
 	}
 
-	pub async fn start(&mut self, before: &str, after: &str) -> anyhow::Result<Event> {
-		let mut stdout = io::stdout();
+	pub async fn start(&mut self, format: &OutputFormat, before: &str, after: &str) -> anyhow::Result<Event> {
 		let first_interval = Duration::from_nanos(self.duration.subsec_nanos().into());
 
 		self.started = Instant::now();
@@ -24,11 +23,7 @@ impl UairTimer {
 
 		while end <= dest {
 			Timer::at(end).await;
-			write!(
-				stdout, "{}{}{}",
-				before, humantime::format_duration(dest - end), after
-			)?;
-			stdout.flush()?;
+			format.display(humantime::format_duration(dest - end), before, after)?;
 			end += self.interval;
 		}
 
