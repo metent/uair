@@ -33,10 +33,10 @@ pub struct Args {
 }
 
 async fn handle_signals() -> anyhow::Result<()> {
-	let mut signals = Signals::new(&[SIGTERM, SIGINT, SIGQUIT])?;
+	let mut signals = Signals::new(&[SIGTERM, SIGINT, SIGPIPE, SIGQUIT])?;
 	while let Some(signal) = signals.next().await {
 		match signal {
-			SIGTERM | SIGINT | SIGQUIT => break,
+			SIGTERM | SIGINT | SIGPIPE | SIGQUIT => break,
 			_ => {},
 		}
 	}
