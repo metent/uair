@@ -150,7 +150,7 @@ clear && uair
 
 ```toml
 [defaults]
-format = "#{time}\n"
+format = "{percent}\n#{time}\n"
 
 [[sessions]]
 name = "Work"
