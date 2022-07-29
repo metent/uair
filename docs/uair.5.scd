@@ -54,43 +54,43 @@ The format property of a session is a string which specifies what and how text i
 
 The list of format specifiers is:
 
-{name}
+*{name}*
 	Session name
 
-{percent}
+*{percent}*
 	Percentage of time remaining
 
-{time}
+*{time}*
 	Remaining time for session
 
-{total}
+*{total}*
 	Total duration of session
 
-{black}
+*{black}*
 	Start black color text
 
-{red}
+*{red}*
 	Start red color text
 
-{green}
+*{green}*
 	Start green color text
 
-{yellow}
+*{yellow}*
 	Start yellow color text
 
-{blue}
+*{blue}*
 	Start blue color text
 
-{purple}
+*{purple}*
 	Start purple color text
 
-{cyan}
+*{cyan}*
 	Start cyan color text
 
-{white}
+*{white}*
 	Start white color text
 
-{end}
+*{end}*
 	Start end color text
 
 # SEE ALSO
