@@ -1,3 +1,11 @@
+### Unreleased
+
+- New `uair` config session property: `format` and format specifiers: `{name}`, `{percent}`, `{time}`, `{total}`, `{black}`, `{red}`, `{green}`, `{yellow}`, `{blue}`, `{purple}`, `{cyan}`, `{white}`, `{end}`.
+
+#### Deprecated
+
+- `after` and `before` session proprties in `uair` config. Use `format` property instead.
+
 ### v0.3.1
 
 - `uair` performance improvement: prevent allocation of buffer each time a command is received.
