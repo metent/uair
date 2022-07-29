@@ -40,8 +40,55 @@ The number of pomodoro sessions and their properties can be specified by an uair
 *after*
 	String which is printed after the remaining time string. (Deprecated)
 
+*format*
+	Specifies the format in which text is printed each second. See FORMAT SPECIFIERS section for details.
+
 *autostart*
 	Boolean value (true or false) which dictates whether the session automatically starts.
+
+# FORMAT SPECIFIERS
+
+The format property of a session is a string which specifies what and how text is printed every second. For example, the following format string can be used to print the name of the session followed by the remaining time, followed by the total duration of the session, all in cyan color.
+
+	{cyan}{name}: {time} / {total}{end}
+
+The list of format specifiers is:
+
+{name}
+	Session name
+
+{time}
+	Remaining time for session
+
+{total}
+	Total duration of session
+
+{black}
+	Start black color text
+
+{red}
+	Start red color text
+
+{green}
+	Start green color text
+
+{yellow}
+	Start yellow color text
+
+{blue}
+	Start blue color text
+
+{purple}
+	Start purple color text
+
+{cyan}
+	Start cyan color text
+
+{white}
+	Start white color text
+
+{end}
+	Start end color text
 
 # SEE ALSO
 

@@ -52,8 +52,7 @@ Example Config:
 
 ```toml
 [defaults]
-before = ""
-after = "\n"
+format = "{time}\n"
 
 [[sessions]]
 name = "Work"
@@ -76,8 +75,7 @@ A list of sessions has to be provided in the `sessions` key. Each session is a t
 - `name`: name of the session
 - `duration`: duration of the session
 - `command`: command which is run when the session finishes
-- `before`: string which is printed before the remaining time string
-- `after`: string which is printed after the remaining time string
+- `format`: specifies the format in which text is printed each second
 - `autostart`: boolean value (true or false) which dictates whether the session automatically starts.
 
 If a property of a session in the array is unspecified, the default value specified in the `defaults` section is used instead. If the property is not mentioned in the default section too, then the propert is sourced from a list of hard-coded defaults.
@@ -122,8 +120,7 @@ In order for it to be displayed, a newline should be printed after printing the 
 
 ```toml
 [defaults]
-before = ""
-after = "\n"
+format = "{time}\n"
 
 [[sessions]]
 name = "Work"
@@ -135,8 +132,7 @@ command = "notify-send 'Work Done!'"
 
 ```toml
 [defaults]
-before = "\r"
-after = "           "
+format = "\r{time}           "
 
 [[sessions]]
 name = "Work"
@@ -154,8 +150,7 @@ clear && uair
 
 ```toml
 [defaults]
-before = "#"
-after = "\n"
+format = "#{time}\n"
 
 [[sessions]]
 name = "Work"
