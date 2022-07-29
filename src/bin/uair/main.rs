@@ -17,7 +17,7 @@ fn main() -> anyhow::Result<()> {
 	if args.config.is_empty() { args.config = get_config_path() }
 	if args.socket.is_empty() { args.socket = get_socket_path() }
 
-	let config = ConfigBuilder::parse(&args)?.build();
+	let config = ConfigBuilder::deserialize(&args)?.build();
 	async_io::block_on(App::new(args, config)?.run().or(handle_signals()))?;
 	Ok(())
 }

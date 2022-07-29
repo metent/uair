@@ -5,7 +5,7 @@ use futures_lite::FutureExt;
 use super::Args;
 use super::server::Listener;
 use super::timer::UairTimer;
-use super::config::{Config, SessionConfig};
+use super::config::{Config, Session};
 
 pub struct App {
 	listener: Listener,
@@ -49,18 +49,17 @@ impl App {
 
 	async fn run_session(&mut self, timer: &mut UairTimer) -> anyhow::Result<bool> {
 		let (curr, first, last) = (self.ptr.curr(), self.ptr.is_first(), self.ptr.is_last());
-		let SessionConfig { before, after, format, command, .. } = &curr;
 
-		match timer.start(format, before, after).or(self.listener.wait(true, first, last)).await? {
+		match timer.start(curr).or(self.listener.wait(true, first, last)).await? {
 			Event::Pause => {
 				timer.update_duration();
 				self.wait().await
 			}
 			Event::Finished => {
-				if !command.is_empty() {
+				if !curr.command.is_empty() {
 					process::Command::new("sh")
 						.arg("-c")
-						.arg(command)
+						.arg(&curr.command)
 						.spawn()?;
 				}
 				if last { self.done = true };
@@ -99,18 +98,18 @@ impl App {
 
 
 struct SessionPointer {
-	sessions: Vec<SessionConfig>,
+	sessions: Vec<Session>,
 	index: usize,
 	loop_on_end: bool,
 }
 
 impl SessionPointer {
-	fn new(sessions: Vec<SessionConfig>, loop_on_end: bool) -> Option<Self> {
+	fn new(sessions: Vec<Session>, loop_on_end: bool) -> Option<Self> {
 		if sessions.len() == 0 { None }
 		else { Some(SessionPointer { sessions, index: 0, loop_on_end }) }
 	}
 
-	fn curr(&self) -> &SessionConfig {
+	fn curr(&self) -> &Session {
 		&self.sessions[self.index]
 	}
 
