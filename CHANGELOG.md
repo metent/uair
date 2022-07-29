@@ -4,7 +4,7 @@
 
 #### Deprecated
 
-- `after` and `before` session proprties in `uair` config. Use `format` property instead.
+- `after` and `before` session properties in `uair` config. Use `format` property instead.
 
 ### v0.3.1
 
