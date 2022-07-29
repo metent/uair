@@ -35,10 +35,10 @@ The number of pomodoro sessions and their properties can be specified by an uair
 	Command which is run when the session finishes.
 
 *before*
-	String which is printed before the remaining time string.
+	String which is printed before the remaining time string. (Deprecated)
 
 *after*
-	String which is printed after the remaining time string.
+	String which is printed after the remaining time string. (Deprecated)
 
 *autostart*
 	Boolean value (true or false) which dictates whether the session automatically starts.
