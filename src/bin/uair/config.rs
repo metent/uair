@@ -26,7 +26,9 @@ impl Session {
 		for token in &self.format {
 			match token {
 				Token::Name => write!(stdout, "{}", self.name)?,
-				Token::Percent => write!(stdout, "{}", time.as_secs() * 100 / self.duration.as_secs())?,
+				Token::Percent => write!(stdout, "{}", (
+					time.as_secs_f32() * 100.0 / self.duration.as_secs_f32()
+				) as u8)?,
 				Token::Time => write!(stdout, "{}", format_duration(time))?,
 				Token::Total => write!(stdout, "{}", format_duration(self.duration))?,
 				Token::Color(Color::Black) => write!(stdout, "{}", "\x1b[0;30m")?,
