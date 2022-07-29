@@ -57,6 +57,9 @@ The list of format specifiers is:
 {name}
 	Session name
 
+{percent}
+	Percentage of time remaining
+
 {time}
 	Remaining time for session
 

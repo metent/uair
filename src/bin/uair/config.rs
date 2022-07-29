@@ -2,7 +2,7 @@ use std::fs;
 use std::io::{self, Write};
 use std::time::Duration;
 use serde::{Serialize, Deserialize};
-use humantime::{format_duration, FormattedDuration};
+use humantime::format_duration;
 use super::Args;
 
 pub struct Config {
@@ -21,12 +21,13 @@ pub struct Session {
 }
 
 impl Session {
-	pub fn display(&self, time: FormattedDuration) -> anyhow::Result<()> {
+	pub fn display(&self, time: Duration) -> anyhow::Result<()> {
 		let mut stdout = io::stdout();
 		for token in &self.format {
 			match token {
 				Token::Name => write!(stdout, "{}", self.name)?,
-				Token::Time => write!(stdout, "{}", time)?,
+				Token::Percent => write!(stdout, "{}", time.as_secs() * 100 / self.duration.as_secs())?,
+				Token::Time => write!(stdout, "{}", format_duration(time))?,
 				Token::Total => write!(stdout, "{}", format_duration(self.duration))?,
 				Token::Color(Color::Black) => write!(stdout, "{}", "\x1b[0;30m")?,
 				Token::Color(Color::Red) => write!(stdout, "{}", "\x1b[0;31m")?,
@@ -180,6 +181,7 @@ struct SessionBuilder {
 #[cfg_attr(test, derive(PartialEq, Debug))]
 enum Token {
 	Name,
+	Percent,
 	Time,
 	Total,
 	Color(Color),
@@ -190,6 +192,7 @@ impl Token {
 	fn parse(input: &str) -> Option<Self> {
 		match input {
 			"{name}" => Some(Token::Name),
+			"{percent}" => Some(Token::Percent),
 			"{time}" => Some(Token::Time),
 			"{total}" => Some(Token::Total),
 			"{black}" => Some(Token::Color(Color::Black)),

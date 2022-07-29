@@ -23,7 +23,7 @@ impl UairTimer {
 
 		while end <= dest {
 			Timer::at(end).await;
-			session.display(humantime::format_duration(dest - end))?;
+			session.display(dest - end)?;
 			end += self.interval;
 		}
 
