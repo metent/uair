@@ -57,7 +57,10 @@ impl App {
 			}
 			Event::Finished => {
 				if !curr.command.is_empty() {
+					let duration = humantime::format_duration(curr.duration).to_string();
 					process::Command::new("sh")
+						.env("name", &curr.name)
+						.env("duration", duration)
 						.arg("-c")
 						.arg(&curr.command)
 						.spawn()?;

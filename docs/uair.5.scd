@@ -32,7 +32,7 @@ The number of pomodoro sessions and their properties can be specified by an uair
 	Duration of the session. Can be specified in human readable format. e.g.: "1h 47m"
 
 *command*
-	Command which is run when the session finishes.
+	Command which is run when the session finishes. See COMMAND ENVIRONMENT section for information on environment variables which are passed to the command.
 
 *before*
 	String which is printed before the remaining time string. (Deprecated)
@@ -92,6 +92,16 @@ The list of format specifiers is:
 
 *{end}*
 	Start end color text
+
+# COMMAND ENVIRONMENT
+
+Some environment variables are passed to the command specified by the command property of a session which enables printing various session properties. They are as follows
+
+*$name*
+	name property of session
+
+*$duration*
+	duration property of session
 
 # SEE ALSO
 

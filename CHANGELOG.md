@@ -1,6 +1,7 @@
 ### Unreleased
 
 - New `uair` config session property: `format` and format specifiers: `{name}`, `{percent}`, `{time}`, `{total}`, `{black}`, `{red}`, `{green}`, `{yellow}`, `{blue}`, `{purple}`, `{cyan}`, `{white}`, `{end}`.
+- New `uair` session command environment variables: `$name` and `$duration`.
 
 #### Deprecated
 
