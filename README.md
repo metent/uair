@@ -163,3 +163,13 @@ Run with:
 ```
 uair | yad --progress
 ```
+
+## Roadmap
+
+- [X] Basic pause/resume functionality using UNIX sockets
+- [X] next/prev subcommands
+- [X] Format specifiers
+- [] Ability to reload configuration
+- [] uairctl listen subcommand: for multiple synchonized timers
+- [] Dedicated GUI client
+- [] Dedicated crossterm client
