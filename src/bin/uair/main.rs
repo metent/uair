@@ -10,15 +10,13 @@ use signal_hook::consts::signal::*;
 use signal_hook_async_std::Signals;
 use uair::get_socket_path;
 use crate::app::App;
-use crate::config::ConfigBuilder;
 
 fn main() -> anyhow::Result<()> {
 	let mut args = Args::parse_args_default_or_exit();
 	if args.config.is_empty() { args.config = get_config_path() }
 	if args.socket.is_empty() { args.socket = get_socket_path() }
 
-	let config = ConfigBuilder::deserialize(&args)?.build();
-	async_io::block_on(App::new(args, config)?.run().or(handle_signals()))?;
+	async_io::block_on(App::new(args)?.run().or(handle_signals()))?;
 	Ok(())
 }
 

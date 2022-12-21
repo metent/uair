@@ -2,6 +2,8 @@ use std::io::{self, Write};
 use std::process;
 use std::time::Duration;
 use futures_lite::FutureExt;
+use crate::config::ConfigBuilder;
+
 use super::Args;
 use super::server::Listener;
 use super::timer::UairTimer;
@@ -10,33 +12,33 @@ use super::config::{Config, Session};
 pub struct App {
 	listener: Listener,
 	ptr: SessionPointer,
-	startup_text: String,
-	pause_at_start: bool,
+	config: Config,
 	done: bool,
 }
 
 impl App {
-	pub fn new(args: Args, config: Config) -> anyhow::Result<Self> {
+	pub fn new(args: Args) -> anyhow::Result<Self> {
+		let config = ConfigBuilder::deserialize(&args)?.build();
 		Ok(App {
 			listener: Listener::new(&args.socket)?,
-			ptr: SessionPointer::new(config.sessions, config.loop_on_end).unwrap(),
-			startup_text: config.startup_text,
-			pause_at_start: config.pause_at_start,
+			ptr: SessionPointer::new(&config.sessions, config.loop_on_end).unwrap(),
+			config,
 			done: false,
 		})
 	}
 
 	pub async fn run(mut self) -> anyhow::Result<()> {
 		let mut stdout = io::stdout();
-		write!(stdout, "{}", self.startup_text)?;
+		write!(stdout, "{}", self.config.startup_text)?;
 		stdout.flush()?;
 
-		if self.pause_at_start { self.listener.wait(false, true, false).await?; }
+		if self.config.pause_at_start { self.listener.wait(false, true, false).await?; }
 
 		while !self.done {
-			let mut timer = UairTimer::new(self.ptr.curr().duration, Duration::from_secs(1));
+			let curr = &self.config.sessions[self.ptr.index];
+			let mut timer = UairTimer::new(curr.duration, Duration::from_secs(1));
 
-			if !self.ptr.curr().autostart {
+			if !curr.autostart {
 				self.listener.wait(false, self.ptr.is_first(), self.ptr.is_last()).await?;
 			}
 
@@ -48,9 +50,10 @@ impl App {
 	}
 
 	async fn run_session(&mut self, timer: &mut UairTimer) -> anyhow::Result<bool> {
-		let (curr, first, last) = (self.ptr.curr(), self.ptr.is_first(), self.ptr.is_last());
+		let curr = &self.config.sessions[self.ptr.index];
+		let (is_first, is_last) = (self.ptr.is_first(), self.ptr.is_last());
 
-		match timer.start(curr).or(self.listener.wait(true, first, last)).await? {
+		match timer.start(curr).or(self.listener.wait(true, is_first, is_last)).await? {
 			Event::Pause => {
 				timer.update_duration();
 				self.wait().await
@@ -65,7 +68,7 @@ impl App {
 						.arg(&curr.command)
 						.spawn()?;
 				}
-				if last { self.done = true };
+				if is_last { self.done = true };
 				self.ptr.next();
 				Ok(false)
 			}
@@ -101,23 +104,19 @@ impl App {
 
 
 struct SessionPointer {
-	sessions: Vec<Session>,
 	index: usize,
+	len: usize,
 	loop_on_end: bool,
 }
 
 impl SessionPointer {
-	fn new(sessions: Vec<Session>, loop_on_end: bool) -> Option<Self> {
+	fn new(sessions: &[Session], loop_on_end: bool) -> Option<Self> {
 		if sessions.len() == 0 { None }
-		else { Some(SessionPointer { sessions, index: 0, loop_on_end }) }
-	}
-
-	fn curr(&self) -> &Session {
-		&self.sessions[self.index]
+		else { Some(SessionPointer { index: 0, len: sessions.len(), loop_on_end }) }
 	}
 
 	fn next(&mut self) {
-		if self.index < self.sessions.len() - 1 {
+		if self.index < self.len - 1 {
 			self.index += 1;
 		} else if self.loop_on_end {
 			self.index = 0;
@@ -128,12 +127,12 @@ impl SessionPointer {
 		if self.index > 0 {
 			self.index -= 1;
 		} else if self.loop_on_end {
-			self.index = self.sessions.len() - 1;
+			self.index = self.len - 1;
 		}
 	}
 
 	fn is_last(&self) -> bool {
-		self.index == self.sessions.len() - 1 && !self.loop_on_end
+		self.index == self.len - 1 && !self.loop_on_end
 	}
 
 	fn is_first(&self) -> bool {
