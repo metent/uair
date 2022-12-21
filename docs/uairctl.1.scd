@@ -10,12 +10,6 @@ uairctl - Command-line application for controlling uair
 
 # OPTIONS
 
-*-p, --pause*
-	Pauses the timer. (Deprecated)
-
-*-r, --resume*
-	Resumes the timer. (Deprecated)
-
 *-s, --socket*
 	Specifies a socket file.
 
@@ -41,9 +35,7 @@ prev
 
 # DESCRIPTION
 
-uairctl is a command line application for controlling uair. It can be binded to a keyboard shortcut for for quickly pausing and resuming the timer. *-p* and *-r* flags can be used together for toggling between 'paused' and 'resumed' states. Note however, both these flags are deprecated and may be removed in subsequent releases.
-
-	uairctl -p -r
+uairctl is a command line application for controlling uair. It can be binded to a keyboard shortcut for for quickly pausing and resuming the timer.
 
 # SEE ALSO
 
