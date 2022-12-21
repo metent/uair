@@ -7,12 +7,6 @@ use uair::get_socket_path;
 fn main() -> anyhow::Result<()> {
 	let mut args = Args::parse_args_default_or_exit();
 
-	match (args.pause, args.resume) {
-		(true, true) => args.command = Some(Command::Toggle(NoArgs {})),
-		(true, false) => args.command = Some(Command::Pause(NoArgs {})),
-		(false, true) => args.command = Some(Command::Resume(NoArgs {})),
-		(false, false) => {}
-	};
 	let comm = if let Some(comm) = args.command { comm } else { return Ok(()) };
 	if args.socket.is_empty() { args.socket = get_socket_path() };
 
@@ -28,10 +22,6 @@ fn main() -> anyhow::Result<()> {
 struct Args {
 	#[options(help = "Show help message and quit.")]
 	help: bool,
-	#[options(help = "Pause the timer. (Deprecated)")]
-	pause: bool,
-	#[options(help = "Resume the timer. (Deprecated)")]
-	resume: bool,
 	#[options(help = "Specifies the socket file.")]
 	socket: String,
 	#[options(command)]

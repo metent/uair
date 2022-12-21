@@ -1,3 +1,9 @@
+### Unreleased
+
+#### Removed
+
+- `-p` and `-r` `uairctl` flags. Use `pause`, `resume` and `toggle` subcommands instead.
+
 ### v0.4.0
 
 - New `uair` config session property: `format` and format specifiers: `{name}`, `{percent}`, `{time}`, `{total}`, `{black}`, `{red}`, `{green}`, `{yellow}`, `{blue}`, `{purple}`, `{cyan}`, `{white}`, `{end}`.
