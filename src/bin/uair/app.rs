@@ -34,8 +34,8 @@ impl App {
 
 		let session = &self.config.sessions[self.sid.curr()];
 		let mut timer = UairTimer::new(session.duration, Duration::from_secs(1));
-		let mut state = if self.config.pause_at_start { State::Paused }
-			else { State::Resumed };
+		let mut state = if self.config.pause_at_start || !session.autostart
+			{ State::Paused } else { State::Resumed };
 
 		loop {
 			match state {
@@ -45,7 +45,7 @@ impl App {
 				State::Reset => {
 					let session = &self.config.sessions[self.sid.curr()];
 					timer = UairTimer::new(session.duration, Duration::from_secs(1));
-					state = State::Resumed;
+					state = if session.autostart { State::Resumed } else { State::Paused };
 				}
 			}
 		}
@@ -55,7 +55,7 @@ impl App {
 	async fn run_session(&mut self, timer: &mut UairTimer) -> Result<State, Error> {
 		let session = &self.config.sessions[self.sid.curr()];
 
-		match timer.start(&session).or(self.handle_commands::<true>()).await? {
+		match timer.start(session).or(self.handle_commands::<true>()).await? {
 			Event::Finished => {
 				if !session.command.is_empty() {
 					let duration = humantime::format_duration(session.duration).to_string();
