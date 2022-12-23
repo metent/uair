@@ -13,7 +13,7 @@ uairctl - Command-line application for controlling uair
 *-s, --socket*
 	Specifies a socket file.
 
-*-h, --help*
+*--help*
 	Show help message and quit.
 
 # COMMANDS

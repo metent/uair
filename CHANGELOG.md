@@ -3,6 +3,7 @@
 #### Removed
 
 - `-p` and `-r` `uairctl` flags. Use `pause`, `resume` and `toggle` subcommands instead.
+- `-h` flag in `uair` and `uairctl`. Use `--help` to display the help message. This is due to a limitation in `argh`, the new argument-parsing library `uair` depends on.
 
 ### v0.4.0
 

@@ -16,7 +16,7 @@ uair - An extensible pomodoro timer
 *-s, --socket*
 	Specifies a socket file.
 
-*-h, --help*
+*--help*
 	Show help message and quit.
 
 # DESCRIPTION
