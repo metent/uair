@@ -13,10 +13,16 @@ use signal_hook::consts::signal::*;
 use signal_hook_async_std::Signals;
 use crate::app::App;
 
-fn main() -> Result<(), Error> {
+fn main() {
 	let args: Args = argh::from_env();
+	let app = match App::new(args) {
+		Ok(app) => app,
+		Err(err) => { eprintln!("{}", err); return }
+	};
 
-	async_io::block_on(App::new(args)?.run().or(catch_term_signals()))
+	if let Err(err) = async_io::block_on(app.run().or(catch_term_signals())) {
+		eprintln!("{}", err);
+	}
 }
 
 #[derive(FromArgs)]
@@ -47,27 +53,12 @@ async fn catch_term_signals() -> Result<(), Error> {
 	Ok(())
 }
 
-#[derive(Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum Error {
-	IoError(io::Error),
-	ConfError(toml::de::Error),
-	DeserError(bincode::Error),
-}
-
-impl From<io::Error> for Error {
-	fn from(err: io::Error) -> Error {
-		Error::IoError(err)
-	}
-}
-
-impl From<toml::de::Error> for Error {
-	fn from(err: toml::de::Error) -> Error {
-		Error::ConfError(err)
-	}
-}
-
-impl From<bincode::Error> for Error {
-	fn from(err: bincode::Error) -> Error {
-		Error::DeserError(err)
-	}
+	#[error("IO Error: {0}")]
+	IoError(#[from] io::Error),
+	#[error("Config Error: {0}")]
+	ConfError(#[from] toml::de::Error),
+	#[error("Deserialization Error: {0}")]
+	DeserError(#[from] bincode::Error),
 }

@@ -24,20 +24,10 @@ struct Args {
 	command: Command,
 }
 
-#[derive(Debug)]
+#[derive(thiserror::Error, Debug)]
 enum Error {
-	SerError(bincode::Error),
-	IoError(io::Error),
-}
-
-impl From<bincode::Error> for Error{
-	fn from(err: bincode::Error) -> Error {
-		Error::SerError(err)
-	}
-}
-
-impl From<io::Error> for Error{
-	fn from(err: io::Error) -> Error {
-		Error::IoError(err)
-	}
+	#[error("Serialization Error: {0}")]
+	SerError(#[from] bincode::Error),
+	#[error("Socket Connection Error: {0}")]
+	IoError(#[from] io::Error),
 }
