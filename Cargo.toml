@@ -10,12 +10,11 @@ keywords = ["pomodoro", "timer", "countdown", "cli", "productivity"]
 categories = ["command-line-utilities"]
 
 [dependencies]
-anyhow = "1.0.68"
+argh = "0.1.9"
 async-io = "1.12.0"
 async-net = "1.7.0"
 bincode = "1.3.3"
 futures-lite = "1.12.0"
-gumdrop = "0.8.1"
 humantime = "2.1.0"
 humantime-serde = "1.1.1"
 serde = { version = "1.0.151", features = ["derive"] }

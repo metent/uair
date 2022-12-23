@@ -1,44 +1,34 @@
 mod app;
 mod config;
-mod server;
+mod socket;
+mod session;
 mod timer;
 
 use std::env;
+use std::io;
+use uair::get_socket_path;
+use argh::FromArgs;
 use futures_lite::{FutureExt, StreamExt};
-use gumdrop::Options;
 use signal_hook::consts::signal::*;
 use signal_hook_async_std::Signals;
-use uair::get_socket_path;
 use crate::app::App;
 
-fn main() -> anyhow::Result<()> {
-	let mut args = Args::parse_args_default_or_exit();
-	if args.config.is_empty() { args.config = get_config_path() }
-	if args.socket.is_empty() { args.socket = get_socket_path() }
+fn main() -> Result<(), Error> {
+	let args: Args = argh::from_env();
 
-	async_io::block_on(App::new(args)?.run().or(handle_signals()))?;
-	Ok(())
+	async_io::block_on(App::new(args)?.run().or(catch_term_signals()))
 }
 
-#[derive(Options)]
+#[derive(FromArgs)]
+/// An extensible pomodoro timer
 pub struct Args {
-	#[options(help = "Show help message and quit.")]
-	help: bool,
-	#[options(help = "Specifies a config file.")]
+	/// specifies a config file.
+	#[argh(option, short = 'c', default = "get_config_path()")]
 	config: String,
-	#[options(help = "Specifies a socket file.")]
-	socket: String,
-}
 
-async fn handle_signals() -> anyhow::Result<()> {
-	let mut signals = Signals::new(&[SIGTERM, SIGINT, SIGPIPE, SIGQUIT])?;
-	while let Some(signal) = signals.next().await {
-		match signal {
-			SIGTERM | SIGINT | SIGPIPE | SIGQUIT => break,
-			_ => {},
-		}
-	}
-	Ok(())
+	/// specifies a socket file.
+	#[argh(option, short = 's', default = "get_socket_path()")]
+	socket: String,
 }
 
 fn get_config_path() -> String {
@@ -48,5 +38,36 @@ fn get_config_path() -> String {
 		home + "/.config/uair/uair.toml"
 	} else {
 		"~/.config/uair/uair.toml".into()
+	}
+}
+
+async fn catch_term_signals() -> Result<(), Error> {
+	let mut signals = Signals::new(&[SIGTERM, SIGINT, SIGPIPE, SIGQUIT])?;
+	signals.next().await;
+	Ok(())
+}
+
+#[derive(Debug)]
+pub enum Error {
+	IoError(io::Error),
+	ConfError(toml::de::Error),
+	DeserError(bincode::Error),
+}
+
+impl From<io::Error> for Error {
+	fn from(err: io::Error) -> Error {
+		Error::IoError(err)
+	}
+}
+
+impl From<toml::de::Error> for Error {
+	fn from(err: toml::de::Error) -> Error {
+		Error::ConfError(err)
+	}
+}
+
+impl From<bincode::Error> for Error {
+	fn from(err: bincode::Error) -> Error {
+		Error::DeserError(err)
 	}
 }

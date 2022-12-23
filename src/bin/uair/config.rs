@@ -1,51 +1,13 @@
-use std::fs;
-use std::io::{self, Write};
 use std::time::Duration;
+use std::str::FromStr;
 use serde::{Serialize, Deserialize};
-use humantime::format_duration;
-use super::Args;
+use crate::session::{Color, Session, Token};
 
 pub struct Config {
 	pub loop_on_end: bool,
 	pub pause_at_start: bool,
 	pub startup_text: String,
 	pub sessions: Vec<Session>,
-}
-
-pub struct Session {
-	pub name: String,
-	pub duration: Duration,
-	pub command: String,
-	format: Vec<Token>,
-	pub autostart: bool,
-}
-
-impl Session {
-	pub fn display(&self, time: Duration) -> anyhow::Result<()> {
-		let mut stdout = io::stdout();
-		for token in &self.format {
-			match token {
-				Token::Name => write!(stdout, "{}", self.name)?,
-				Token::Percent => write!(stdout, "{}", (
-					time.as_secs_f32() * 100.0 / self.duration.as_secs_f32()
-				) as u8)?,
-				Token::Time => write!(stdout, "{}", format_duration(time))?,
-				Token::Total => write!(stdout, "{}", format_duration(self.duration))?,
-				Token::Color(Color::Black) => write!(stdout, "{}", "\x1b[0;30m")?,
-				Token::Color(Color::Red) => write!(stdout, "{}", "\x1b[0;31m")?,
-				Token::Color(Color::Green) => write!(stdout, "{}", "\x1b[0;32m")?,
-				Token::Color(Color::Yellow) => write!(stdout, "{}", "\x1b[0;33m")?,
-				Token::Color(Color::Blue) => write!(stdout, "{}", "\x1b[0;34m")?,
-				Token::Color(Color::Purple) => write!(stdout, "{}", "\x1b[0;35m")?,
-				Token::Color(Color::Cyan) => write!(stdout, "{}", "\x1b[0;36m")?,
-				Token::Color(Color::White) => write!(stdout, "{}", "\x1b[0;37m")?,
-				Token::Color(Color::End) => write!(stdout, "{}", "\x1b[0m")?,
-				Token::Literal(literal) => write!(stdout, "{}", literal)?,
-			};
-		}
-		stdout.flush()?;
-		Ok(())
-	}
 }
 
 #[derive(Serialize, Deserialize)]
@@ -62,8 +24,8 @@ pub struct ConfigBuilder {
 }
 
 impl ConfigBuilder {
-	pub fn deserialize(args: &Args) -> anyhow::Result<Self> {
-		Ok(toml::from_str(&fs::read_to_string(&args.config)?)?)
+	pub fn deserialize(conf: &str) -> Result<Self, toml::de::Error> {
+		toml::from_str(conf)
 	}
 
 	pub fn build(self) -> Config {
@@ -105,7 +67,7 @@ impl ConfigBuilder {
 			match c {
 				'{' => open = Some(i),
 				'}' => if let Some(j) = open {
-					if let Some(token) = Token::parse(&format[j..=i]) {
+					if let Ok(token) = (&format[j..=i]).parse() {
 						if k != j { tokens.push(Token::Literal(format[k..j].into())) };
 						tokens.push(token);
 						k = i + 1;
@@ -180,48 +142,27 @@ struct SessionBuilder {
 	autostart: Option<bool>,
 }
 
-#[cfg_attr(test, derive(PartialEq, Debug))]
-enum Token {
-	Name,
-	Percent,
-	Time,
-	Total,
-	Color(Color),
-	Literal(String),
-}
+impl FromStr for Token {
+	type Err = ();
 
-impl Token {
-	fn parse(input: &str) -> Option<Self> {
-		match input {
-			"{name}" => Some(Token::Name),
-			"{percent}" => Some(Token::Percent),
-			"{time}" => Some(Token::Time),
-			"{total}" => Some(Token::Total),
-			"{black}" => Some(Token::Color(Color::Black)),
-			"{red}" => Some(Token::Color(Color::Red)),
-			"{green}" => Some(Token::Color(Color::Green)),
-			"{yellow}" => Some(Token::Color(Color::Yellow)),
-			"{blue}" => Some(Token::Color(Color::Blue)),
-			"{purple}" => Some(Token::Color(Color::Purple)),
-			"{cyan}" => Some(Token::Color(Color::Cyan)),
-			"{white}" => Some(Token::Color(Color::White)),
-			"{end}" => Some(Token::Color(Color::End)),
-			_ => None,
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		match s {
+			"{name}" => Ok(Token::Name),
+			"{percent}" => Ok(Token::Percent),
+			"{time}" => Ok(Token::Time),
+			"{total}" => Ok(Token::Total),
+			"{black}" => Ok(Token::Color(Color::Black)),
+			"{red}" => Ok(Token::Color(Color::Red)),
+			"{green}" => Ok(Token::Color(Color::Green)),
+			"{yellow}" => Ok(Token::Color(Color::Yellow)),
+			"{blue}" => Ok(Token::Color(Color::Blue)),
+			"{purple}" => Ok(Token::Color(Color::Purple)),
+			"{cyan}" => Ok(Token::Color(Color::Cyan)),
+			"{white}" => Ok(Token::Color(Color::White)),
+			"{end}" => Ok(Token::Color(Color::End)),
+			_ => Err(()),
 		}
 	}
-}
-
-#[cfg_attr(test, derive(PartialEq, Debug))]
-enum Color {
-	Black,
-	Red,
-	Green,
-	Yellow,
-	Blue,
-	Purple,
-	Cyan,
-	White,
-	End,
 }
 
 #[cfg(test)]

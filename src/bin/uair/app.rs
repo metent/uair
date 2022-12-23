@@ -1,149 +1,122 @@
 use std::io::{self, Write};
+use std::fs;
 use std::process;
 use std::time::Duration;
+use uair::{Command, PauseArgs, ResumeArgs};
 use futures_lite::FutureExt;
-use crate::config::ConfigBuilder;
-
-use super::Args;
-use super::server::Listener;
-use super::timer::UairTimer;
-use super::config::{Config, Session};
+use crate::{Args, Error};
+use crate::config::{Config, ConfigBuilder};
+use crate::socket::Listener;
+use crate::session::SessionId;
+use crate::timer::UairTimer;
 
 pub struct App {
 	listener: Listener,
-	ptr: SessionPointer,
+	sid: SessionId,
 	config: Config,
-	done: bool,
 }
 
 impl App {
-	pub fn new(args: Args) -> anyhow::Result<Self> {
-		let config = ConfigBuilder::deserialize(&args)?.build();
+	pub fn new(args: Args) -> Result<Self, Error> {
+		let conf_data = fs::read_to_string(&args.config)?;
+		let config = ConfigBuilder::deserialize(&conf_data)?.build();
 		Ok(App {
 			listener: Listener::new(&args.socket)?,
-			ptr: SessionPointer::new(&config.sessions, config.loop_on_end).unwrap(),
+			sid: SessionId::new(&config.sessions, config.loop_on_end).unwrap(),
 			config,
-			done: false,
 		})
 	}
 
-	pub async fn run(mut self) -> anyhow::Result<()> {
+	pub async fn run(mut self) -> Result<(), Error> {
 		let mut stdout = io::stdout();
 		write!(stdout, "{}", self.config.startup_text)?;
 		stdout.flush()?;
 
-		if self.config.pause_at_start { self.listener.wait(false, true, false).await?; }
+		let session = &self.config.sessions[self.sid.curr()];
+		let mut timer = UairTimer::new(session.duration, Duration::from_secs(1));
+		let mut state = if self.config.pause_at_start { State::Paused }
+			else { State::Resumed };
 
-		while !self.done {
-			let curr = &self.config.sessions[self.ptr.index];
-			let mut timer = UairTimer::new(curr.duration, Duration::from_secs(1));
-
-			if !curr.autostart {
-				self.listener.wait(false, self.ptr.is_first(), self.ptr.is_last()).await?;
+		loop {
+			match state {
+				State::Paused => state = self.pause_session().await?,
+				State::Resumed => state = self.run_session(&mut timer).await?,
+				State::Finished => break,
+				State::Reset => {
+					let session = &self.config.sessions[self.sid.curr()];
+					timer = UairTimer::new(session.duration, Duration::from_secs(1));
+					state = State::Resumed;
+				}
 			}
-
-			while self.run_session(&mut timer).await? {}
-
 		}
-
 		Ok(())
 	}
 
-	async fn run_session(&mut self, timer: &mut UairTimer) -> anyhow::Result<bool> {
-		let curr = &self.config.sessions[self.ptr.index];
-		let (is_first, is_last) = (self.ptr.is_first(), self.ptr.is_last());
+	async fn run_session(&mut self, timer: &mut UairTimer) -> Result<State, Error> {
+		let session = &self.config.sessions[self.sid.curr()];
 
-		match timer.start(curr).or(self.listener.wait(true, is_first, is_last)).await? {
-			Event::Pause => {
-				timer.update_duration();
-				self.wait().await
-			}
+		match timer.start(&session).or(self.handle_commands::<true>()).await? {
 			Event::Finished => {
-				if !curr.command.is_empty() {
-					let duration = humantime::format_duration(curr.duration).to_string();
+				if !session.command.is_empty() {
+					let duration = humantime::format_duration(session.duration).to_string();
 					process::Command::new("sh")
-						.env("name", &curr.name)
+						.env("name", &session.name)
 						.env("duration", duration)
 						.arg("-c")
-						.arg(&curr.command)
+						.arg(&session.command)
 						.spawn()?;
 				}
-				if is_last { self.done = true };
-				self.ptr.next();
-				Ok(false)
+				if self.sid.is_last() { return Ok(State::Finished) };
+				self.sid.next();
 			}
-			Event::Next => {
-				self.ptr.next();
-				Ok(false)
+			Event::Command(Command::Pause(_)) => {
+				timer.update_duration();
+				return Ok(State::Paused);
 			}
-			Event::Prev => {
-				self.ptr.prev();
-				Ok(false)
-			}
-			_ => Ok(true)
+			Event::Command(Command::Next(_)) => self.sid.next(),
+			Event::Command(Command::Prev(_)) => self.sid.prev(),
+			_ => unreachable!(),
 		}
+		Ok(State::Reset)
 	}
 
-	async fn wait(&mut self) -> anyhow::Result<bool> {
-		let (first, last) = (self.ptr.is_first(), self.ptr.is_last());
-		match self.listener.wait(false, first, last).await? {
-			Event::Resume => Ok(true),
-			Event::Next => {
-				self.ptr.next();
-				Ok(false)
+	async fn pause_session(&mut self) -> Result<State, Error> {
+		match self.handle_commands::<false>().await? {
+			Event::Command(Command::Resume(_)) => return Ok(State::Resumed),
+			Event::Command(Command::Next(_)) => self.sid.next(),
+			Event::Command(Command::Prev(_)) => self.sid.prev(),
+			_ => unreachable!(),
+		}
+		Ok(State::Reset)
+	}
+
+	async fn handle_commands<const R: bool>(&self) -> Result<Event, Error> {
+		loop {
+			let msg = self.listener.listen().await?;
+			let command: Command = bincode::deserialize(&msg)?;
+			match command {
+				Command::Pause(_) | Command::Toggle(_) if R =>
+					return Ok(Event::Command(Command::Pause(PauseArgs {}))),
+				Command::Resume(_) | Command::Toggle(_) if !R =>
+					return Ok(Event::Command(Command::Resume(ResumeArgs {}))),
+				Command::Next(_) if !self.sid.is_last() =>
+					return Ok(Event::Command(command)),
+				Command::Prev(_) if !self.sid.is_first() =>
+					return Ok(Event::Command(command)),
+				_ => {}
 			}
-			Event::Prev => {
-				self.ptr.prev();
-				Ok(false)
-			}
-			_ => Ok(true)
 		}
-	}
-}
-
-
-
-struct SessionPointer {
-	index: usize,
-	len: usize,
-	loop_on_end: bool,
-}
-
-impl SessionPointer {
-	fn new(sessions: &[Session], loop_on_end: bool) -> Option<Self> {
-		if sessions.len() == 0 { None }
-		else { Some(SessionPointer { index: 0, len: sessions.len(), loop_on_end }) }
-	}
-
-	fn next(&mut self) {
-		if self.index < self.len - 1 {
-			self.index += 1;
-		} else if self.loop_on_end {
-			self.index = 0;
-		}
-	}
-
-	fn prev(&mut self) {
-		if self.index > 0 {
-			self.index -= 1;
-		} else if self.loop_on_end {
-			self.index = self.len - 1;
-		}
-	}
-
-	fn is_last(&self) -> bool {
-		self.index == self.len - 1 && !self.loop_on_end
-	}
-
-	fn is_first(&self) -> bool {
-		self.index == 0 && !self.loop_on_end
 	}
 }
 
 pub enum Event {
-	Pause,
-	Resume,
+	Command(Command),
 	Finished,
-	Next,
-	Prev,
+}
+
+enum State {
+	Paused,
+	Resumed,
+	Finished,
+	Reset,
 }
