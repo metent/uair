@@ -1,5 +1,9 @@
 ### Unreleased
 
+#### Added
+
+- New `uair` config key: `iterations`. Allows to specify a finite amount of iterations of all sessions.
+
 #### Removed
 
 - `-p` and `-r` `uairctl` flags. Use `pause`, `resume` and `toggle` subcommands instead.

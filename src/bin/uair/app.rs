@@ -22,7 +22,7 @@ impl App {
 		let config = ConfigBuilder::deserialize(&conf_data)?.build();
 		Ok(App {
 			listener: Listener::new(&args.socket)?,
-			sid: SessionId::new(&config.sessions, config.loop_on_end).unwrap(),
+			sid: SessionId::new(&config.sessions, config.iterations),
 			config,
 		})
 	}

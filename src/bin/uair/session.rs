@@ -64,13 +64,20 @@ pub enum Color {
 pub struct SessionId {
 	index: usize,
 	len: usize,
-	loop_on_end: bool,
+	iter_no: u64,
+	total_iter: u64,
+	infinite: bool,
 }
 
 impl SessionId {
-	pub fn new(sessions: &[Session], loop_on_end: bool) -> Option<Self> {
-		if sessions.len() == 0 { None }
-		else { Some(SessionId { index: 0, len: sessions.len(), loop_on_end }) }
+	pub fn new(sessions: &[Session], iterations: Option<u64>) -> Self {
+		SessionId {
+			index: 0,
+			len: sessions.len(),
+			iter_no: 0,
+			total_iter: iterations.unwrap_or(0),
+			infinite: iterations.is_none(),
+		}
 	}
 
 	pub fn curr(&self) -> usize {
@@ -80,24 +87,30 @@ impl SessionId {
 	pub fn next(&mut self) {
 		if self.index < self.len - 1 {
 			self.index += 1;
-		} else if self.loop_on_end {
+		} else if self.infinite {
 			self.index = 0;
+		} else if self.iter_no < self.total_iter - 1 {
+			self.index = 0;
+			self.iter_no += 1;
 		}
 	}
 
 	pub fn prev(&mut self) {
 		if self.index > 0 {
 			self.index -= 1;
-		} else if self.loop_on_end {
+		} else if self.infinite {
+			self.index = self.len - 1
+		} else if self.iter_no > 0 {
 			self.index = self.len - 1;
+			self.iter_no -= 1;
 		}
 	}
 
 	pub fn is_last(&self) -> bool {
-		self.index == self.len - 1 && !self.loop_on_end
+		self.index == self.len - 1 && !self.infinite && self.iter_no == self.total_iter - 1
 	}
 
 	pub fn is_first(&self) -> bool {
-		self.index == 0 && !self.loop_on_end
+		self.index == 0 && !self.infinite && self.iter_no == 0
 	}
 }

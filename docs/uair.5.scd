@@ -11,6 +11,9 @@ The number of pomodoro sessions and their properties can be specified by an uair
 *loop_on_end*
 	This is a boolean value (true or false) which controls whether uair repeats all sessions after the completion of the last session.
 
+*iterations*
+	This is a non-negative integer which specifies the number of times sessions mentioned in the sessions array are iterated.
+
 *pause_at_start*
 	This is a boolean value (true or false) which controls whether uair is at paused state at startup.
 

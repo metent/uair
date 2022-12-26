@@ -4,7 +4,7 @@ use serde::{Serialize, Deserialize};
 use crate::session::{Color, Session, Token};
 
 pub struct Config {
-	pub loop_on_end: bool,
+	pub iterations: Option<u64>,
 	pub pause_at_start: bool,
 	pub startup_text: String,
 	pub sessions: Vec<Session>,
@@ -14,6 +14,7 @@ pub struct Config {
 pub struct ConfigBuilder {
 	#[serde(default)]
 	loop_on_end: bool,
+	iterations: Option<u64>,
 	#[serde(default)]
 	pause_at_start: bool,
 	#[serde(default)]
@@ -30,7 +31,14 @@ impl ConfigBuilder {
 
 	pub fn build(self) -> Config {
 		Config {
-			loop_on_end: self.loop_on_end,
+			iterations: if self.iterations.is_some() {
+				self.iterations
+			} else {
+				match self.loop_on_end {
+					true => None,
+					false => Some(1),
+				}
+			},
 			pause_at_start: self.pause_at_start,
 			startup_text: self.startup_text,
 			sessions: self.sessions.into_iter().map(|s| Session {
