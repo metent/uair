@@ -1,4 +1,4 @@
-use std::io::{self, Write};
+use std::io::{self, Write, Error as IoError, ErrorKind};
 use std::fs;
 use std::process;
 use std::time::Duration;
@@ -18,7 +18,13 @@ pub struct App {
 
 impl App {
 	pub fn new(args: Args) -> Result<Self, Error> {
-		let conf_data = fs::read_to_string(&args.config)?;
+		let conf_data = match fs::read_to_string(&args.config) {
+			Ok(c) => c,
+			Err(_) => return Err(Error::IoError(IoError::new(
+				ErrorKind::NotFound,
+				format!("Could not load config file \"{}\"", args.config),
+			))),
+		};
 		let config = ConfigBuilder::deserialize(&conf_data)?.build();
 		Ok(App {
 			listener: Listener::new(&args.socket)?,
@@ -119,4 +125,21 @@ enum State {
 	Resumed,
 	Finished,
 	Reset,
+}
+
+#[cfg(test)]
+mod tests {
+	use crate::{app::App, Args};
+
+	#[test]
+	fn indicate_missing_config_file() {
+		let result = App::new(Args {
+			config: "~/.config/uair/no_uair.toml".into(),
+			socket: "/tmp/uair.sock".into(),
+		});
+		assert_eq!(
+			result.err().unwrap().to_string(),
+			"IO Error: Could not load config file \"~/.config/uair/no_uair.toml\"",
+		);
+	}
 }
