@@ -1,0 +1,12 @@
+[defaults]
+format = "{time}\n"
+
+[[sessions]]
+name = "Work"
+duration = "25m"
+command = "notify-send 'Work Done!'"
+
+[[sessions]]
+name = "Rest"
+duration = "5m"
+command = "notify-send 'Rest Done!'"

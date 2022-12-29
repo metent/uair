@@ -42,6 +42,41 @@ Make sure to include `$HOME/.cargo/bin` in the `PATH` variable.
 
 ## Usage
 
+### Quickstart
+
+Copy `resources/uair.toml` under the project directory to `~/.config/uair/`.
+
+```
+mkdir -p ~/.config/uair
+cp -r resources/uair.toml ~/.config/uair/uair.toml
+```
+
+Start uair.
+
+```
+uair
+```
+
+When `uair` is started, or a session is completed, the timer is in a paused state. In order to start the session, `uairctl` command must be used. Start the session by resuming the timer by invoking `uairctl` from another shell.
+
+```
+uairctl resume
+```
+
+and pause the session using
+
+```
+uairctl pause
+```
+
+To toggle between pause and resume states, use
+
+```
+uairctl toggle
+```
+
+### Configuration
+
 Configuration is done in TOML. If a config file is not specified by the `-c` flag, it is sourced according to the XDG Base Directory Specification, i.e. it looks for the config file in the following order, until it successfully finds one.
 
 - $XDG_CONFIG_HOME/uair/uair.toml
@@ -79,24 +114,6 @@ A list of sessions has to be provided in the `sessions` key. Each session is a t
 - `autostart`: boolean value (true or false) which dictates whether the session automatically starts.
 
 If a property of a session in the array is unspecified, the default value specified in the `defaults` section is used instead. If the property is not mentioned in the default section too, then the propert is sourced from a list of hard-coded defaults.
-
-When `uair` is started, or a session is completed, the timer is in a paused state. In order to start the session, `uairctl` command must be used. Start the session by resuming the timer.
-
-```
-uairctl resume
-```
-
-While the timer is running, pause using
-
-```
-uairctl pause
-```
-
-To toggle between pause and resume states, use
-
-```
-uairctl toggle
-```
 
 ### Integration with polybar
 
