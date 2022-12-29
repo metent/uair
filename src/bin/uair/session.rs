@@ -8,10 +8,12 @@ pub struct Session {
 	pub command: String,
 	pub format: Vec<Token>,
 	pub autostart: bool,
+	pub paused_state_text: String,
+	pub resumed_state_text: String,
 }
 
 impl Session {
-	pub fn display(&self, time: Duration) -> io::Result<()> {
+	pub fn display<const R: bool>(&self, time: Duration) -> io::Result<()> {
 		let mut stdout = io::stdout();
 		for token in &self.format {
 			match token {
@@ -19,8 +21,14 @@ impl Session {
 				Token::Percent => write!(stdout, "{}", (
 					time.as_secs_f32() * 100.0 / self.duration.as_secs_f32()
 				) as u8)?,
-				Token::Time => write!(stdout, "{}", format_duration(time))?,
+				Token::Time => write!(stdout, "{}",
+					format_duration(Duration::from_secs(time.as_secs())))?,
 				Token::Total => write!(stdout, "{}", format_duration(self.duration))?,
+				Token::State => write!(stdout, "{}", if R {
+					&self.paused_state_text
+				} else {
+					&self.resumed_state_text
+				})?,
 				Token::Color(Color::Black) => write!(stdout, "{}", "\x1b[0;30m")?,
 				Token::Color(Color::Red) => write!(stdout, "{}", "\x1b[0;31m")?,
 				Token::Color(Color::Green) => write!(stdout, "{}", "\x1b[0;32m")?,
@@ -44,6 +52,7 @@ pub enum Token {
 	Percent,
 	Time,
 	Total,
+	State,
 	Color(Color),
 	Literal(String),
 }

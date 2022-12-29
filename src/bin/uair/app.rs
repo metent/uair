@@ -45,7 +45,7 @@ impl App {
 
 		loop {
 			match state {
-				State::Paused => state = self.pause_session().await?,
+				State::Paused => state = self.pause_session(&timer).await?,
 				State::Resumed => state = self.run_session(&mut timer).await?,
 				State::Finished => break,
 				State::Reset => {
@@ -86,9 +86,15 @@ impl App {
 		Ok(State::Reset)
 	}
 
-	async fn pause_session(&mut self) -> Result<State, Error> {
+	async fn pause_session(&mut self, timer: &UairTimer) -> Result<State, Error> {
+		let session = &self.config.sessions[self.sid.curr()];
+		session.display::<false>(timer.duration + Duration::from_secs(1))?;
+
 		match self.handle_commands::<false>().await? {
-			Event::Command(Command::Resume(_)) => return Ok(State::Resumed),
+			Event::Command(Command::Resume(_)) => {
+				session.display::<true>(timer.duration + Duration::from_secs(1))?;
+				return Ok(State::Resumed);
+			}
 			Event::Command(Command::Next(_)) => self.sid.next(),
 			Event::Command(Command::Prev(_)) => self.sid.prev(),
 			_ => unreachable!(),

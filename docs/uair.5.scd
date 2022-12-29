@@ -49,6 +49,12 @@ The number of pomodoro sessions and their properties can be specified by an uair
 *autostart*
 	Boolean value (true or false) which dictates whether the session automatically starts.
 
+*paused_state_text*
+	Text which is displayed by the *{state}* format specifier when the timer is paused.
+
+*resumed_state_text*
+	Text which is displayed by the *{state}* format specifier when the timer is resumed.
+
 # FORMAT SPECIFIERS
 
 The format property of a session is a string which specifies what and how text is printed every second. For example, the following format string can be used to print the name of the session followed by the remaining time, followed by the total duration of the session, all in cyan color.
@@ -65,6 +71,9 @@ The list of format specifiers is:
 
 *{time}*
 	Remaining time for session
+
+*{state}*
+	Text which depends on the state (paused/resumed) of the timer. This text is configurable through *paused_state_text* and *resumed_state_text* session properties.
 
 *{total}*
 	Total duration of session

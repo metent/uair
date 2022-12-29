@@ -5,7 +5,7 @@ use crate::app::Event;
 use crate::session::Session;
 
 pub struct UairTimer {
-	duration: Duration,
+	pub duration: Duration,
 	interval: Duration,
 	started: Instant,
 }
@@ -24,7 +24,7 @@ impl UairTimer {
 
 		while end <= dest {
 			Timer::at(end).await;
-			session.display(dest - end)?;
+			session.display::<true>(dest - end)?;
 			end += self.interval;
 		}
 

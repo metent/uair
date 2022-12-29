@@ -2,6 +2,7 @@
 
 #### Added
 
+- New `uair` format specifier `{state}` and session properties `paused_state_text` and `resumed_state_text`. Allows to display different text depending on the state (paused/resumed) of the timer.
 - New `uair` config key: `iterations`. Allows to specify a finite amount of iterations of all sessions.
 
 #### Changed

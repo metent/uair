@@ -47,6 +47,8 @@ impl ConfigBuilder {
 				command: s.command.unwrap_or_else(|| self.defaults.command.clone()),
 				format: Self::fetch_format(s.format, s.before, s.after, &self.defaults),
 				autostart: s.autostart.unwrap_or_else(|| self.defaults.autostart.clone()),
+				paused_state_text: s.paused_state_text.unwrap_or_else(|| self.defaults.paused_state_text.clone()),
+				resumed_state_text: s.resumed_state_text.unwrap_or_else(|| self.defaults.resumed_state_text.clone()),
 			}).collect(),
 		}
 	}
@@ -111,6 +113,10 @@ pub struct Defaults {
 	format: Option<String>,
 	#[serde(default = "Defaults::autostart")]
 	autostart: bool,
+	#[serde(default = "Defaults::paused_state_text")]
+	paused_state_text: String,
+	#[serde(default = "Defaults::resumed_state_text")]
+	resumed_state_text: String,
 }
 
 impl Defaults {
@@ -121,6 +127,8 @@ impl Defaults {
 	fn after() -> String { "\n".into() }
 	fn format() -> Option<String> { None }
 	fn autostart() -> bool { false }
+	fn paused_state_text() -> String { "⏸".into() }
+	fn resumed_state_text() -> String { "⏵".into() }
 }
 
 impl Default for Defaults {
@@ -133,6 +141,8 @@ impl Default for Defaults {
 			after: Defaults::after(),
 			format: Defaults::format(),
 			autostart: Defaults::autostart(),
+			paused_state_text: Defaults::paused_state_text(),
+			resumed_state_text: Defaults::resumed_state_text(),
 		}
 	}
 }
@@ -148,6 +158,8 @@ struct SessionBuilder {
 	after: Option<String>,
 	format: Option<String>,
 	autostart: Option<bool>,
+	paused_state_text: Option<String>,
+	resumed_state_text: Option<String>,
 }
 
 impl FromStr for Token {
@@ -159,6 +171,7 @@ impl FromStr for Token {
 			"{percent}" => Ok(Token::Percent),
 			"{time}" => Ok(Token::Time),
 			"{total}" => Ok(Token::Total),
+			"{state}" => Ok(Token::State),
 			"{black}" => Ok(Token::Color(Color::Black)),
 			"{red}" => Ok(Token::Color(Color::Red)),
 			"{green}" => Ok(Token::Color(Color::Green)),
