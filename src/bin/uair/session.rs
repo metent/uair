@@ -51,9 +51,9 @@ impl<'a> Display for DisplayableSession<'a> {
 					format_duration(Duration::from_secs(self.time.as_secs())))?,
 				Token::Total => write!(f, "{}", format_duration(self.session.duration))?,
 				Token::State => write!(f, "{}", if self.running {
-					&self.session.paused_state_text
-				} else {
 					&self.session.resumed_state_text
+				} else {
+					&self.session.paused_state_text
 				})?,
 				Token::Color(Color::Black) => write!(f, "{}", "\x1b[0;30m")?,
 				Token::Color(Color::Red) => write!(f, "{}", "\x1b[0;31m")?,
@@ -95,6 +95,7 @@ pub enum Color {
 	End,
 }
 
+#[derive(Copy, Clone)]
 pub struct SessionId {
 	index: usize,
 	len: usize,

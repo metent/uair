@@ -41,10 +41,10 @@ impl App {
 		write!(stdout, "{}", self.config.startup_text)?;
 		stdout.flush()?;
 
-		let session = &self.config.sessions[self.sid.curr()];
-		self.timer.duration = session.duration;
-		let mut state = if self.config.pause_at_start || !session.autostart
-			{ State::Paused } else { State::Resumed };
+		if self.config.pause_at_start {
+			self.handle_commands::<false>().await?;
+		}
+		let mut state = State::Reset(self.sid);
 
 		loop {
 			match state {
@@ -88,20 +88,18 @@ impl App {
 	}
 
 	async fn pause_session(&self) -> Result<State, Error> {
+		const DELTA: Duration = Duration::from_nanos(1_000_000_000 - 1);
 		let mut stdout = io::stdout();
 		let session = &self.config.sessions[self.sid.curr()];
 
-		write!(
-			stdout, "{}",
-			session.display::<false>(self.timer.duration + Duration::from_secs(1))
-		)?;
+		write!(stdout, "{}", session.display::<false>(self.timer.duration + DELTA))?;
 		stdout.flush()?;
 
 		match self.handle_commands::<false>().await? {
 			Event::Command(Command::Resume(_)) => {
 				write!(
 					stdout, "{}",
-					session.display::<true>(self.timer.duration + Duration::from_secs(1))
+					session.display::<true>(self.timer.duration + DELTA)
 				)?;
 				stdout.flush()?;
 				Ok(State::Resumed)
