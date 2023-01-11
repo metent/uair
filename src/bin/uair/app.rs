@@ -1,7 +1,6 @@
 use std::io::{self, Write, Error as IoError, ErrorKind};
 use std::fs;
-use std::process;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use uair::{Command, PauseArgs, ResumeArgs};
 use futures_lite::FutureExt;
 use crate::{Args, Error};
@@ -14,6 +13,8 @@ pub struct App {
 	listener: Listener,
 	sid: SessionId,
 	config: Config,
+	timer: UairTimer,
+	started: Instant,
 }
 
 impl App {
@@ -30,6 +31,8 @@ impl App {
 			listener: Listener::new(&args.socket)?,
 			sid: SessionId::new(&config.sessions, config.iterations),
 			config,
+			timer: UairTimer::new(Duration::default(), Duration::from_secs(1)),
+			started: Instant::now(),
 		})
 	}
 
@@ -39,18 +42,25 @@ impl App {
 		stdout.flush()?;
 
 		let session = &self.config.sessions[self.sid.curr()];
-		let mut timer = UairTimer::new(session.duration, Duration::from_secs(1));
+		self.timer.duration = session.duration;
 		let mut state = if self.config.pause_at_start || !session.autostart
 			{ State::Paused } else { State::Resumed };
 
 		loop {
 			match state {
-				State::Paused => state = self.pause_session(&timer).await?,
-				State::Resumed => state = self.run_session(&mut timer).await?,
+				State::Paused => state = self.pause_session().await?,
+				State::Resumed => {
+					self.started = Instant::now();
+					state = self.run_session().await?;
+					if let State::Paused = state {
+						self.timer.duration -= Instant::now() - self.started;
+					}
+				}
 				State::Finished => break,
-				State::Reset => {
+				State::Reset(sid) => {
+					self.sid = sid;
 					let session = &self.config.sessions[self.sid.curr()];
-					timer = UairTimer::new(session.duration, Duration::from_secs(1));
+					self.timer = UairTimer::new(session.duration, Duration::from_secs(1));
 					state = if session.autostart { State::Resumed } else { State::Paused };
 				}
 			}
@@ -58,53 +68,54 @@ impl App {
 		Ok(())
 	}
 
-	async fn run_session(&mut self, timer: &mut UairTimer) -> Result<State, Error> {
+	async fn run_session(&self) -> Result<State, Error> {
 		let session = &self.config.sessions[self.sid.curr()];
 
-		match timer.start(session).or(self.handle_commands::<true>()).await? {
+		match self.timer.start(session, self.started).or(self.handle_commands::<true>()).await? {
 			Event::Finished => {
-				if !session.command.is_empty() {
-					let duration = humantime::format_duration(session.duration).to_string();
-					process::Command::new("sh")
-						.env("name", &session.name)
-						.env("duration", duration)
-						.arg("-c")
-						.arg(&session.command)
-						.spawn()?;
+				session.run_command()?;
+				if self.sid.is_last() {
+					Ok(State::Finished)
+				} else {
+					Ok(State::Reset(self.sid.next()))
 				}
-				if self.sid.is_last() { return Ok(State::Finished) };
-				self.sid.next();
 			}
-			Event::Command(Command::Pause(_)) => {
-				timer.update_duration();
-				return Ok(State::Paused);
-			}
-			Event::Command(Command::Next(_)) => self.sid.next(),
-			Event::Command(Command::Prev(_)) => self.sid.prev(),
+			Event::Command(Command::Pause(_)) => Ok(State::Paused),
+			Event::Command(Command::Next(_)) => Ok(State::Reset(self.sid.next())),
+			Event::Command(Command::Prev(_)) => Ok(State::Reset(self.sid.prev())),
 			_ => unreachable!(),
 		}
-		Ok(State::Reset)
 	}
 
-	async fn pause_session(&mut self, timer: &UairTimer) -> Result<State, Error> {
+	async fn pause_session(&self) -> Result<State, Error> {
+		let mut stdout = io::stdout();
 		let session = &self.config.sessions[self.sid.curr()];
-		session.display::<false>(timer.duration + Duration::from_secs(1))?;
+
+		write!(
+			stdout, "{}",
+			session.display::<false>(self.timer.duration + Duration::from_secs(1))
+		)?;
+		stdout.flush()?;
 
 		match self.handle_commands::<false>().await? {
 			Event::Command(Command::Resume(_)) => {
-				session.display::<true>(timer.duration + Duration::from_secs(1))?;
-				return Ok(State::Resumed);
+				write!(
+					stdout, "{}",
+					session.display::<true>(self.timer.duration + Duration::from_secs(1))
+				)?;
+				stdout.flush()?;
+				Ok(State::Resumed)
 			}
-			Event::Command(Command::Next(_)) => self.sid.next(),
-			Event::Command(Command::Prev(_)) => self.sid.prev(),
+			Event::Command(Command::Next(_)) => Ok(State::Reset(self.sid.next())),
+			Event::Command(Command::Prev(_)) => Ok(State::Reset(self.sid.prev())),
 			_ => unreachable!(),
 		}
-		Ok(State::Reset)
 	}
 
 	async fn handle_commands<const R: bool>(&self) -> Result<Event, Error> {
 		loop {
-			let msg = self.listener.listen().await?;
+			let mut stream = self.listener.listen().await?;
+			let msg = stream.read().await?;
 			let command: Command = bincode::deserialize(&msg)?;
 			match command {
 				Command::Pause(_) | Command::Toggle(_) if R =>
@@ -129,8 +140,8 @@ pub enum Event {
 enum State {
 	Paused,
 	Resumed,
+	Reset(SessionId),
 	Finished,
-	Reset,
 }
 
 #[cfg(test)]

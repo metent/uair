@@ -1,4 +1,6 @@
-use std::io::{self, Write};
+use std::fmt::{self, Display, Formatter};
+use std::io;
+use std::process;
 use std::time::Duration;
 use humantime::format_duration;
 
@@ -13,35 +15,58 @@ pub struct Session {
 }
 
 impl Session {
-	pub fn display<const R: bool>(&self, time: Duration) -> io::Result<()> {
-		let mut stdout = io::stdout();
-		for token in &self.format {
+	pub fn display<const R: bool>(&self, time: Duration) -> DisplayableSession {
+		DisplayableSession { session: self, time, running: R }
+	}
+
+	pub fn run_command(&self) -> io::Result<()> {
+		if !self.command.is_empty() {
+			let duration = humantime::format_duration(self.duration).to_string();
+			process::Command::new("sh")
+				.env("name", &self.name)
+				.env("duration", duration)
+				.arg("-c")
+				.arg(&self.command)
+				.spawn()?;
+		}
+		Ok(())
+	}
+}
+
+pub struct DisplayableSession<'a> {
+	session: &'a Session,
+	time: Duration,
+	running: bool,
+}
+
+impl<'a> Display for DisplayableSession<'a> {
+	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+		for token in &self.session.format {
 			match token {
-				Token::Name => write!(stdout, "{}", self.name)?,
-				Token::Percent => write!(stdout, "{}", (
-					time.as_secs_f32() * 100.0 / self.duration.as_secs_f32()
+				Token::Name => write!(f, "{}", self.session.name)?,
+				Token::Percent => write!(f, "{}", (
+					self.time.as_secs_f32() * 100.0 / self.session.duration.as_secs_f32()
 				) as u8)?,
-				Token::Time => write!(stdout, "{}",
-					format_duration(Duration::from_secs(time.as_secs())))?,
-				Token::Total => write!(stdout, "{}", format_duration(self.duration))?,
-				Token::State => write!(stdout, "{}", if R {
-					&self.paused_state_text
+				Token::Time => write!(f, "{}",
+					format_duration(Duration::from_secs(self.time.as_secs())))?,
+				Token::Total => write!(f, "{}", format_duration(self.session.duration))?,
+				Token::State => write!(f, "{}", if self.running {
+					&self.session.paused_state_text
 				} else {
-					&self.resumed_state_text
+					&self.session.resumed_state_text
 				})?,
-				Token::Color(Color::Black) => write!(stdout, "{}", "\x1b[0;30m")?,
-				Token::Color(Color::Red) => write!(stdout, "{}", "\x1b[0;31m")?,
-				Token::Color(Color::Green) => write!(stdout, "{}", "\x1b[0;32m")?,
-				Token::Color(Color::Yellow) => write!(stdout, "{}", "\x1b[0;33m")?,
-				Token::Color(Color::Blue) => write!(stdout, "{}", "\x1b[0;34m")?,
-				Token::Color(Color::Purple) => write!(stdout, "{}", "\x1b[0;35m")?,
-				Token::Color(Color::Cyan) => write!(stdout, "{}", "\x1b[0;36m")?,
-				Token::Color(Color::White) => write!(stdout, "{}", "\x1b[0;37m")?,
-				Token::Color(Color::End) => write!(stdout, "{}", "\x1b[0m")?,
-				Token::Literal(literal) => write!(stdout, "{}", literal)?,
+				Token::Color(Color::Black) => write!(f, "{}", "\x1b[0;30m")?,
+				Token::Color(Color::Red) => write!(f, "{}", "\x1b[0;31m")?,
+				Token::Color(Color::Green) => write!(f, "{}", "\x1b[0;32m")?,
+				Token::Color(Color::Yellow) => write!(f, "{}", "\x1b[0;33m")?,
+				Token::Color(Color::Blue) => write!(f, "{}", "\x1b[0;34m")?,
+				Token::Color(Color::Purple) => write!(f, "{}", "\x1b[0;35m")?,
+				Token::Color(Color::Cyan) => write!(f, "{}", "\x1b[0;36m")?,
+				Token::Color(Color::White) => write!(f, "{}", "\x1b[0;37m")?,
+				Token::Color(Color::End) => write!(f, "{}", "\x1b[0m")?,
+				Token::Literal(literal) => write!(f, "{}", literal)?,
 			};
 		}
-		stdout.flush()?;
 		Ok(())
 	}
 }
@@ -93,26 +118,30 @@ impl SessionId {
 		self.index
 	}
 
-	pub fn next(&mut self) {
+	pub fn next(&self) -> SessionId {
+		let mut next = SessionId { ..*self };
 		if self.index < self.len - 1 {
-			self.index += 1;
+			next.index += 1;
 		} else if self.infinite {
-			self.index = 0;
+			next.index = 0;
 		} else if self.iter_no < self.total_iter - 1 {
-			self.index = 0;
-			self.iter_no += 1;
+			next.index = 0;
+			next.iter_no += 1;
 		}
+		next
 	}
 
-	pub fn prev(&mut self) {
+	pub fn prev(&self) -> SessionId {
+		let mut prev = SessionId { ..*self };
 		if self.index > 0 {
-			self.index -= 1;
+			prev.index -= 1;
 		} else if self.infinite {
-			self.index = self.len - 1
+			prev.index = self.len - 1
 		} else if self.iter_no > 0 {
-			self.index = self.len - 1;
-			self.iter_no -= 1;
+			prev.index = self.len - 1;
+			prev.iter_no -= 1;
 		}
+		prev
 	}
 
 	pub fn is_last(&self) -> bool {
