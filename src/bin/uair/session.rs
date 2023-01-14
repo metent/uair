@@ -15,8 +15,8 @@ pub struct Session {
 }
 
 impl Session {
-	pub fn display<const R: bool>(&self, time: Duration) -> DisplayableSession {
-		DisplayableSession { session: self, time, running: R }
+	pub fn display<const R: bool>(&self, time: Duration) -> DisplayableSession<'_, R> {
+		DisplayableSession { session: self, time }
 	}
 
 	pub fn run_command(&self) -> io::Result<()> {
@@ -33,13 +33,12 @@ impl Session {
 	}
 }
 
-pub struct DisplayableSession<'a> {
+pub struct DisplayableSession<'a, const R: bool> {
 	session: &'a Session,
 	time: Duration,
-	running: bool,
 }
 
-impl<'a> Display for DisplayableSession<'a> {
+impl<'a, const R: bool> Display for DisplayableSession<'a, R> {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		for token in &self.session.format {
 			match token {
@@ -50,7 +49,7 @@ impl<'a> Display for DisplayableSession<'a> {
 				Token::Time => write!(f, "{}",
 					format_duration(Duration::from_secs(self.time.as_secs())))?,
 				Token::Total => write!(f, "{}", format_duration(self.session.duration))?,
-				Token::State => write!(f, "{}", if self.running {
+				Token::State => write!(f, "{}", if R {
 					&self.session.resumed_state_text
 				} else {
 					&self.session.paused_state_text
@@ -80,6 +79,31 @@ pub enum Token {
 	State,
 	Color(Color),
 	Literal(String),
+}
+
+impl Token {
+	pub fn parse(format: &str) -> Vec<Token> {
+		let mut tokens = Vec::new();
+		let mut k = 0;
+		let mut open = None;
+
+		for (i, c) in format.char_indices() {
+			match c {
+				'{' => open = Some(i),
+				'}' => if let Some(j) = open {
+					if let Ok(token) = (&format[j..=i]).parse() {
+						if k != j { tokens.push(Token::Literal(format[k..j].into())) };
+						tokens.push(token);
+						k = i + 1;
+					}
+				}
+				_ => {},
+			}
+		}
+		if k != format.len() { tokens.push(Token::Literal(format[k..].into())) };
+
+		tokens
+	}
 }
 
 #[cfg_attr(test, derive(PartialEq, Debug))]
@@ -151,5 +175,33 @@ impl SessionId {
 
 	pub fn is_first(&self) -> bool {
 		self.index == 0 && !self.infinite && self.iter_no == 0
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::{Color, Token};
+
+	#[test]
+	fn parse_format() {
+		assert_eq!(&Token::parse("{cyan}{time}{end}\n"), &[
+			Token::Color(Color::Cyan),
+			Token::Time,
+			Token::Color(Color::End),
+			Token::Literal("\n".into()),
+		]);
+		assert_eq!(&Token::parse("String with {time} with some text ahead."), &[
+			Token::Literal("String with ".into()),
+			Token::Time,
+			Token::Literal(" with some text ahead.".into())
+		]);
+		assert_eq!(&Token::parse("}}{}{{}{}}}{{}{{}}}"), &[
+			Token::Literal("}}{}{{}{}}}{{}{{}}}".into())
+		]);
+		assert_eq!(&Token::parse("{time} text {time}"), &[
+			Token::Time,
+			Token::Literal(" text ".into()),
+			Token::Time,
+		]);
 	}
 }

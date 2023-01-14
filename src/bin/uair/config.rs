@@ -55,40 +55,17 @@ impl ConfigBuilder {
 
 	fn fetch_format(format: Option<String>, before: Option<String>, after: Option<String>, defaults: &Defaults) -> Vec<Token> {
 		match format {
-			Some(format) => Self::parse(&format),
+			Some(format) => Token::parse(&format),
 			None => match (before, after) {
 				(Some(before), Some(after)) => Self::from_before_after(before, after),
 				(Some(before), None) => Self::from_before_after(before, defaults.after.clone()),
 				(None, Some(after)) => Self::from_before_after(defaults.before.clone(), after),
 				_ => match &defaults.format {
-					Some(format) => Self::parse(format),
+					Some(format) => Token::parse(format),
 					None => Self::from_before_after(defaults.before.clone(), defaults.after.clone())
 				}
 			}
 		}
-	}
-
-	fn parse(format: &str) -> Vec<Token> {
-		let mut tokens = Vec::new();
-		let mut k = 0;
-		let mut open = None;
-
-		for (i, c) in format.char_indices() {
-			match c {
-				'{' => open = Some(i),
-				'}' => if let Some(j) = open {
-					if let Ok(token) = (&format[j..=i]).parse() {
-						if k != j { tokens.push(Token::Literal(format[k..j].into())) };
-						tokens.push(token);
-						k = i + 1;
-					}
-				}
-				_ => {},
-			}
-		}
-		if k != format.len() { tokens.push(Token::Literal(format[k..].into())) };
-
-		tokens
 	}
 
 	fn from_before_after(before: String, after: String) -> Vec<Token> {
@@ -183,33 +160,5 @@ impl FromStr for Token {
 			"{end}" => Ok(Token::Color(Color::End)),
 			_ => Err(()),
 		}
-	}
-}
-
-#[cfg(test)]
-mod tests {
-	use super::{Color, ConfigBuilder, Token};
-
-	#[test]
-	fn parse_format() {
-		assert_eq!(&ConfigBuilder::parse("{cyan}{time}{end}\n"), &[
-			Token::Color(Color::Cyan),
-			Token::Time,
-			Token::Color(Color::End),
-			Token::Literal("\n".into()),
-		]);
-		assert_eq!(&ConfigBuilder::parse("String with {time} with some text ahead."), &[
-			Token::Literal("String with ".into()),
-			Token::Time,
-			Token::Literal(" with some text ahead.".into())
-		]);
-		assert_eq!(&ConfigBuilder::parse("}}{}{{}{}}}{{}{{}}}"), &[
-			Token::Literal("}}{}{{}{}}}{{}{{}}}".into())
-		]);
-		assert_eq!(&ConfigBuilder::parse("{time} text {time}"), &[
-			Token::Time,
-			Token::Literal(" text ".into()),
-			Token::Time,
-		]);
 	}
 }
