@@ -2,7 +2,7 @@ use std::io;
 use std::fs;
 use std::path::PathBuf;
 use async_net::unix::{UnixListener, UnixStream};
-use futures_lite::AsyncReadExt;
+use futures_lite::{AsyncReadExt, AsyncWriteExt};
 
 pub struct Listener {
 	path: PathBuf,
@@ -31,9 +31,13 @@ pub struct Stream {
 }
 
 impl Stream {
-	pub async fn read(&mut self) -> io::Result<[u8; 4]> {
-		let mut buffer = [0; 4];
-		self.stream.read(&mut buffer).await?;
-		Ok(buffer)
+	pub async fn read<'buf>(&mut self, buffer: &'buf mut Vec<u8>) -> io::Result<&'buf [u8]> {
+		let n_bytes = self.stream.read_to_end(buffer).await?;
+		Ok(&buffer[..n_bytes])
+	}
+
+	pub async fn write(&mut self, data: &[u8]) -> io::Result<()> {
+		self.stream.write_all(data).await?;
+		Ok(())
 	}
 }

@@ -10,6 +10,7 @@ pub enum Command {
 	Toggle(ToggleArgs),
 	Next(NextArgs),
 	Prev(PrevArgs),
+	Fetch(FetchArgs),
 }
 
 #[derive(FromArgs, Serialize, Deserialize)]
@@ -36,6 +37,15 @@ pub struct NextArgs {}
 /// Jump to the previous session.
 #[argh(subcommand, name = "prev")]
 pub struct PrevArgs {}
+
+#[derive(FromArgs, Serialize, Deserialize)]
+/// Fetch timer information.
+#[argh(subcommand, name = "fetch")]
+pub struct FetchArgs {
+	/// output format
+	#[argh(positional)]
+	pub format: String,
+}
 
 pub fn get_socket_path() -> String {
 	if let Ok(xdg_runtime_dir) = env::var("XDG_RUNTIME_DIR") {

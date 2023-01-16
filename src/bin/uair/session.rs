@@ -15,8 +15,16 @@ pub struct Session {
 }
 
 impl Session {
-	pub fn display<const R: bool>(&self, time: Duration) -> DisplayableSession<'_, R> {
-		DisplayableSession { session: self, time }
+	pub fn display<const R: bool>(&self, time: Duration) -> DisplayableSession<'_, '_, R> {
+		DisplayableSession { session: self, time, format: &self.format }
+	}
+
+	pub fn display_with_format<'session, 'token, const R: bool>(
+		&'session self,
+		time: Duration,
+		format: &'token [Token]
+	) -> DisplayableSession<'session, 'token, R> {
+		DisplayableSession { session: self, time, format }
 	}
 
 	pub fn run_command(&self) -> io::Result<()> {
@@ -33,14 +41,15 @@ impl Session {
 	}
 }
 
-pub struct DisplayableSession<'a, const R: bool> {
-	session: &'a Session,
+pub struct DisplayableSession<'session, 'token,  const R: bool> {
+	session: &'session Session,
 	time: Duration,
+	format: &'token[Token],
 }
 
-impl<'a, const R: bool> Display for DisplayableSession<'a, R> {
+impl<'session, 'token, const R: bool> Display for DisplayableSession<'session, 'token, R> {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		for token in &self.session.format {
+		for token in self.format {
 			match token {
 				Token::Name => write!(f, "{}", self.session.name)?,
 				Token::Percent => write!(f, "{}", (

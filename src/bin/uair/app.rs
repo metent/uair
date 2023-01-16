@@ -1,12 +1,12 @@
 use std::io::{self, Write, Error as IoError, ErrorKind};
 use std::fs;
 use std::time::{Duration, Instant};
-use uair::{Command, PauseArgs, ResumeArgs};
+use uair::{Command, FetchArgs, PauseArgs, ResumeArgs};
 use futures_lite::FutureExt;
 use crate::{Args, Error};
 use crate::config::{Config, ConfigBuilder};
 use crate::socket::Listener;
-use crate::session::SessionId;
+use crate::session::{SessionId, Token};
 use crate::timer::UairTimer;
 
 pub struct App {
@@ -111,9 +111,11 @@ impl App {
 	}
 
 	async fn handle_commands<const R: bool>(&self) -> Result<Event, Error> {
+		let mut buffer = Vec::new();
 		loop {
 			let mut stream = self.listener.listen().await?;
-			let msg = stream.read().await?;
+			buffer.clear();
+			let msg = stream.read(&mut buffer).await?;
 			let command: Command = bincode::deserialize(&msg)?;
 			match command {
 				Command::Pause(_) | Command::Toggle(_) if R =>
@@ -124,6 +126,17 @@ impl App {
 					return Ok(Event::Command(command)),
 				Command::Prev(_) if !self.sid.is_first() =>
 					return Ok(Event::Command(command)),
+				Command::Fetch(FetchArgs { format }) => {
+					let tokens = Token::parse(&format);
+					let session = &self.config.sessions[self.sid.curr()];
+					let remaining = if R {
+						self.timer.duration - (Instant::now() - self.started)
+					} else {
+						self.timer.duration
+					};
+					let displayed = session.display_with_format::<R>(remaining, &tokens);
+					stream.write(format!("{}", displayed).as_bytes()).await?;
+				}
 				_ => {}
 			}
 		}
