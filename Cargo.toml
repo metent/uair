@@ -10,15 +10,15 @@ keywords = ["pomodoro", "timer", "countdown", "cli", "productivity"]
 categories = ["command-line-utilities"]
 
 [dependencies]
-argh = "0.1.9"
+argh = "0.1.10"
 async-io = "1.12.0"
 async-net = "1.7.0"
 bincode = "1.3.3"
 futures-lite = "1.12.0"
 humantime = "2.1.0"
 humantime-serde = "1.1.1"
-serde = { version = "1.0.151", features = ["derive"] }
+serde = { version = "1.0.152", features = ["derive"] }
 signal-hook = "0.3.14"
 signal-hook-async-std = "0.2.2"
 thiserror = "1.0.38"
-toml = "0.5.10"
+toml = "0.7.0"
