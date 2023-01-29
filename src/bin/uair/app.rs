@@ -96,6 +96,14 @@ impl App {
 		stdout.flush()?;
 
 		match self.handle_commands::<false>().await? {
+			Event::Finished => {
+				session.run_command()?;
+				if self.sid.is_last() {
+					Ok(State::Finished)
+				} else {
+					Ok(State::Reset(self.sid.next()))
+				}
+			}
 			Event::Command(Command::Resume(_)) => {
 				write!(
 					stdout, "{}",
@@ -126,6 +134,7 @@ impl App {
 					return Ok(Event::Command(command)),
 				Command::Prev(_) if !self.sid.is_first() =>
 					return Ok(Event::Command(command)),
+				Command::Finish(_) => return Ok(Event::Finished),
 				Command::Fetch(FetchArgs { format }) => {
 					let tokens = Token::parse(&format);
 					let session = &self.config.sessions[self.sid.curr()];

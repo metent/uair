@@ -10,6 +10,7 @@ pub enum Command {
 	Toggle(ToggleArgs),
 	Next(NextArgs),
 	Prev(PrevArgs),
+	Finish(FinishArgs),
 	Fetch(FetchArgs),
 }
 
@@ -37,6 +38,11 @@ pub struct NextArgs {}
 /// Jump to the previous session.
 #[argh(subcommand, name = "prev")]
 pub struct PrevArgs {}
+
+#[derive(FromArgs, Serialize, Deserialize)]
+/// Instantly finishes the current session, invoking the session's specified command.
+#[argh(subcommand, name = "finish")]
+pub struct FinishArgs {}
 
 #[derive(FromArgs, Serialize, Deserialize)]
 /// Fetch timer information.

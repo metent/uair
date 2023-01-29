@@ -5,6 +5,7 @@
 - New `uair` format specifier `{state}` and session properties `paused_state_text` and `resumed_state_text`. Allows to display different text depending on the state (paused/resumed) of the timer.
 - New `uair` config key: `iterations`. Allows to specify a finite amount of iterations of all sessions.
 - New `uairctl` subcommand: `fetch`, to fetch information from the timer and display it in a specified format.
+- New `uairctl` subcommand: `finish`, to instantly finish the current session, invoking the session's specified command.
 
 #### Changed
 

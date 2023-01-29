@@ -33,6 +33,9 @@ next
 prev
 	Jumps to the previous session.
 
+finish
+	Instantly finishes the current session, invoking the session's specified command.
+
 fetch [FORMAT]
 	Fetches information and displays it in the format specified by the format text [FORMAT]. Formatting of input text is done using the same format specifiers specified in FORMAT SPECIFIERS sections in uair(5).
 
