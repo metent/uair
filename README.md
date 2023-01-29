@@ -113,7 +113,7 @@ A list of sessions has to be provided in the `sessions` key. Each session is a t
 - `format`: specifies the format in which text is printed each second
 - `autostart`: boolean value (true or false) which dictates whether the session automatically starts.
 
-If a property of a session in the array is unspecified, the default value specified in the `defaults` section is used instead. If the property is not mentioned in the default section too, then the propert is sourced from a list of hard-coded defaults.
+If a property of a session in the array is unspecified, the default value specified in the `defaults` section is used instead. If the property is not mentioned in the default section too, then the property is sourced from a list of hard-coded defaults.
 
 ### Integration with polybar
 
