@@ -3,6 +3,7 @@ mod config;
 mod socket;
 mod session;
 mod timer;
+mod time_format;
 
 use std::env;
 use std::io;

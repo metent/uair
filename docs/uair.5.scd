@@ -46,6 +46,9 @@ The number of pomodoro sessions and their properties can be specified by an uair
 *format*
 	Specifies the format in which text is printed each second. See FORMAT SPECIFIERS section for details.
 
+*time_format*
+	Specifies the time format for *{time}*. Possible values: *Humantime* or *MinSec*.
+
 *autostart*
 	Boolean value (true or false) which dictates whether the session automatically starts.
 

@@ -3,12 +3,14 @@ use std::io;
 use std::process;
 use std::time::Duration;
 use humantime::format_duration;
+use crate::time_format::TimeFormat;
 
 pub struct Session {
 	pub name: String,
 	pub duration: Duration,
 	pub command: String,
 	pub format: Vec<Token>,
+	pub time_format: TimeFormat,
 	pub autostart: bool,
 	pub paused_state_text: String,
 	pub resumed_state_text: String,
@@ -56,7 +58,9 @@ impl<'session, 'token, const R: bool> Display for DisplayableSession<'session, '
 					self.time.as_secs_f32() * 100.0 / self.session.duration.as_secs_f32()
 				) as u8)?,
 				Token::Time => write!(f, "{}",
-					format_duration(Duration::from_secs(self.time.as_secs())))?,
+					&self.session.time_format.format_duration(
+						Duration::from_secs(self.time.as_secs()))
+					)?,
 				Token::Total => write!(f, "{}", format_duration(self.session.duration))?,
 				Token::State => write!(f, "{}", if R {
 					&self.session.resumed_state_text

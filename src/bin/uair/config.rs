@@ -2,6 +2,7 @@ use std::time::Duration;
 use std::str::FromStr;
 use serde::{Serialize, Deserialize};
 use crate::session::{Color, Session, Token};
+use crate::time_format::TimeFormat;
 
 pub struct Config {
 	pub iterations: Option<u64>,
@@ -46,6 +47,9 @@ impl ConfigBuilder {
 				duration: s.duration.unwrap_or_else(|| self.defaults.duration.clone()),
 				command: s.command.unwrap_or_else(|| self.defaults.command.clone()),
 				format: Self::fetch_format(s.format, s.before, s.after, &self.defaults),
+				time_format: Self::parse_time_format(
+                    &s.time_format.unwrap_or_else(|| self.defaults.time_format.clone())
+                ),
 				autostart: s.autostart.unwrap_or_else(|| self.defaults.autostart.clone()),
 				paused_state_text: s.paused_state_text.unwrap_or_else(|| self.defaults.paused_state_text.clone()),
 				resumed_state_text: s.resumed_state_text.unwrap_or_else(|| self.defaults.resumed_state_text.clone()),
@@ -68,6 +72,15 @@ impl ConfigBuilder {
 		}
 	}
 
+	fn parse_time_format(unparsed: &str) -> TimeFormat {
+		let unparsed = unparsed.to_lowercase();
+
+		match &unparsed[..] {
+			"humantime" => TimeFormat::Humantime,
+			"minsec" => TimeFormat::MinSec,
+			_ => TimeFormat::Humantime,
+		}
+	}
 	fn from_before_after(before: String, after: String) -> Vec<Token> {
 		vec![Token::Literal(before), Token::Time, Token::Literal(after)]
 	}
@@ -88,6 +101,8 @@ pub struct Defaults {
 	after: String,
 	#[serde(default = "Defaults::format")]
 	format: Option<String>,
+	#[serde(default = "Defaults::time_format")]
+	time_format: String,
 	#[serde(default = "Defaults::autostart")]
 	autostart: bool,
 	#[serde(default = "Defaults::paused_state_text")]
@@ -103,6 +118,7 @@ impl Defaults {
 	fn before() -> String { "".into() }
 	fn after() -> String { "\n".into() }
 	fn format() -> Option<String> { None }
+	fn time_format() -> String { "Humantime".into() }
 	fn autostart() -> bool { false }
 	fn paused_state_text() -> String { "⏸".into() }
 	fn resumed_state_text() -> String { "⏵".into() }
@@ -117,6 +133,7 @@ impl Default for Defaults {
 			before: Defaults::before(),
 			after: Defaults::after(),
 			format: Defaults::format(),
+			time_format: Defaults::time_format(),
 			autostart: Defaults::autostart(),
 			paused_state_text: Defaults::paused_state_text(),
 			resumed_state_text: Defaults::resumed_state_text(),
@@ -134,6 +151,7 @@ struct SessionBuilder {
 	before: Option<String>,
 	after: Option<String>,
 	format: Option<String>,
+	time_format: Option<String>,
 	autostart: Option<bool>,
 	paused_state_text: Option<String>,
 	resumed_state_text: Option<String>,
