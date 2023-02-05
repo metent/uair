@@ -6,6 +6,7 @@
 - New `uair` config key: `iterations`. Allows to specify a finite amount of iterations of all sessions.
 - New `uairctl` subcommand: `fetch`, to fetch information from the timer and display it in a specified format.
 - New `uairctl` subcommand: `finish`, to instantly finish the current session, invoking the session's specified command.
+- New `uair` config session property: `time_format`. Specifies the format in which `{time}` format specifier prints time.
 
 #### Changed
 

@@ -466,6 +466,7 @@ dependencies = [
  "futures-lite",
  "humantime",
  "humantime-serde",
+ "nom8",
  "serde",
  "signal-hook",
  "signal-hook-async-std",
