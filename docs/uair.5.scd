@@ -46,6 +46,9 @@ The number of pomodoro sessions and their properties can be specified by an uair
 *format*
 	Specifies the format in which text is printed each second. See FORMAT SPECIFIERS section for details.
 
+*time_format*
+	Specifies the format in which *{time}* format specifier prints time. See TIME FORMAT SPECIFIERS section for details.
+
 *autostart*
 	Boolean value (true or false) which dictates whether the session automatically starts.
 
@@ -104,6 +107,52 @@ The list of format specifiers is:
 
 *{end}*
 	Start end color text
+
+# TIME FORMAT SPECIFIERS
+
+The time_format property of a session is a string which specifies what and how text produced by *{time}* format specifier is printed. Time format specifiers have the following syntax.
+
+	%[optional skip flag][optional padding flag]alphabet
+
+As an example, the following time format string can be used to print time in a digital clock-like format.
+
+	%H:%M:%S
+
+The list of interpreted sequences is:
+
+*%Y*
+	Remaining years
+
+*%B*
+	Remaining months in a year
+
+*%D*
+	Remaining days in a month
+
+*%H*
+	Remaining hours in a day
+
+*%M*
+	Remaining minutes in an hour
+
+*%S*
+	Remaining seconds in a minute
+
+*%P*
+	Prints 's' if the quantity specified by the format specifier before it is plural and nothing if singular.
+
+The list of optional padding flags is:
+
+*0*
+	Pad with zeroes (default)
+
+*_*
+	Pad with spaces
+
+*-*
+	Do not pad
+
+An optional '*' flag may follow '%' to skip the quantity specified by the format specifier and skip all text before the next quantifiable format specifier.
 
 # COMMAND ENVIRONMENT
 
