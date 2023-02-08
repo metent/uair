@@ -44,7 +44,11 @@ impl App {
 		if self.config.pause_at_start {
 			self.handle_commands::<false>().await?;
 		}
-		let mut state = State::Reset(self.sid);
+		let mut state = if self.config.iterations != Some(0) && !self.config.sessions.is_empty() {
+			State::Reset(self.sid)
+		} else {
+			State::Finished
+		};
 
 		loop {
 			match state {
