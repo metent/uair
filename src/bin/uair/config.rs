@@ -31,13 +31,12 @@ impl ConfigBuilder {
 
 	pub fn build(self) -> Config {
 		Config {
-			iterations: if self.iterations.is_some() {
+			iterations: if self.loop_on_end && self.iterations != Some(0) {
+				None
+			} else if self.iterations.is_some() {
 				self.iterations
 			} else {
-				match self.loop_on_end {
-					true => None,
-					false => Some(1),
-				}
+				Some(1)
 			},
 			pause_at_start: self.pause_at_start,
 			startup_text: self.startup_text,
