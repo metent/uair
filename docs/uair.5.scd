@@ -146,13 +146,13 @@ The list of optional padding flags is:
 *0*
 	Pad with zeroes (default)
 
-*_*
+*\_*
 	Pad with spaces
 
 *-*
 	Do not pad
 
-An optional '*' flag may follow '%' to skip the quantity specified by the format specifier and skip all text before the next quantifiable format specifier.
+An optional '\*' flag may follow '%' to skip the quantity specified by the format specifier and skip all text before the next quantifiable format specifier.
 
 # COMMAND ENVIRONMENT
 

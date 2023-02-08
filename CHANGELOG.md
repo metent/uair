@@ -1,4 +1,10 @@
-### Unreleased
+### v0.5.1
+
+#### Fixed
+
+- Fixed `uair(5)` man page build error.
+
+### v0.5.0
 
 #### Added
 
