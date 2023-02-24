@@ -3,12 +3,12 @@ use std::io;
 use std::process;
 use std::time::Duration;
 use humantime::format_duration;
-use nom8::{IResult, Parser};
-use nom8::branch::alt;
-use nom8::bytes::{any, one_of, take_until};
-use nom8::combinator::{opt, peek, rest};
-use nom8::multi::many0;
-use nom8::sequence::preceded;
+use winnow::{IResult, Parser};
+use winnow::branch::alt;
+use winnow::bytes::{any, one_of, take_until0};
+use winnow::combinator::{opt, peek, rest};
+use winnow::multi::many0;
+use winnow::sequence::preceded;
 
 pub struct Session {
 	pub name: String,
@@ -195,7 +195,7 @@ impl TimeFormatToken {
 	pub fn parse(format: &str) -> Vec<TimeFormatToken> {
 		let res: IResult<&str, Vec<TimeFormatToken>> = many0(alt((
 			preceded("%", (opt(one_of("*")), opt(one_of("-_0")), opt(any)).map(Self::identify)),
-			take_until("%").map(|s: &str| TimeFormatToken::Literal(s.into())),
+			take_until0("%").map(|s: &str| TimeFormatToken::Literal(s.into())),
 			(peek(any), rest).map(|(_, s): (char, &str)| TimeFormatToken::Literal(s.into())),
 		)))(format);
 		res.unwrap().1
