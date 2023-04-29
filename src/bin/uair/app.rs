@@ -39,17 +39,17 @@ impl App {
 		loop {
 			match self.state {
 				State::Paused(duration) => self.pause_session(duration).await?,
-				State::Resumed(end) => self.run_session(end).await?,
+				State::Resumed(start, dest) => self.run_session(start, dest).await?,
 				State::Finished => break,
 			}
 		}
 		Ok(())
 	}
 
-	async fn run_session(&mut self, dest: Instant) -> Result<(), Error> {
+	async fn run_session(&mut self, start: Instant, dest: Instant) -> Result<(), Error> {
 		let session = &self.data.curr_session();
 
-		match self.timer.start(session, dest).or(self.data.handle_commands::<true>()).await? {
+		match self.timer.start(session, start, dest).or(self.data.handle_commands::<true>()).await? {
 			Event::Finished => {
 				session.run_command()?;
 				if self.data.sid.is_last() {
@@ -88,7 +88,8 @@ impl App {
 			Event::Command(Command::Resume(_)) => {
 				write!(stdout, "{}", session.display::<true>(duration + DELTA))?;
 				stdout.flush()?;
-				self.state = State::Resumed(Instant::now() + duration);
+				let start = Instant::now();
+				self.state = State::Resumed(start, start + duration);
 			}
 			Event::Command(Command::Next(_)) => self.state = self.data.next_session(),
 			Event::Command(Command::Prev(_)) => self.state = self.data.prev_session(),
@@ -195,7 +196,8 @@ impl AppData {
 	fn new_state(&self) -> State {
 		let session = self.curr_session();
 		if session.autostart {
-			State::Resumed(Instant::now() + session.duration)
+			let start = Instant::now();
+			State::Resumed(start, start + session.duration)
 		} else {
 			State::Paused(session.duration)
 		}
@@ -204,7 +206,7 @@ impl AppData {
 
 enum State {
 	Paused(Duration),
-	Resumed(Instant),
+	Resumed(Instant, Instant),
 	Finished,
 }
 

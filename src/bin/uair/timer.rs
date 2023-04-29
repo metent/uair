@@ -14,10 +14,9 @@ impl UairTimer {
 		UairTimer { interval }
 	}
 
-	pub async fn start(&self, session: &Session, dest: Instant) -> Result<Event, Error> {
+	pub async fn start(&self, session: &Session, start: Instant, dest: Instant) -> Result<Event, Error> {
 		let mut stdout = io::stdout();
 
-		let start = Instant::now();
 		let duration = dest - start;
 		let first_interval = Duration::from_nanos(duration.subsec_nanos().into());
 		let mut end = start + first_interval;
