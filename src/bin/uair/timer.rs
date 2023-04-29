@@ -6,22 +6,21 @@ use crate::app::Event;
 use crate::session::Session;
 
 pub struct UairTimer {
-	pub duration: Duration,
 	interval: Duration,
 }
 
 impl UairTimer {
-	pub fn new(duration: Duration, interval: Duration) -> Self {
-		UairTimer { duration, interval }
+	pub fn new(interval: Duration) -> Self {
+		UairTimer { interval }
 	}
 
-	pub async fn start(&self, session: &Session, started: Instant) -> Result<Event, Error> {
+	pub async fn start(&self, session: &Session, dest: Instant) -> Result<Event, Error> {
 		let mut stdout = io::stdout();
 
-		let first_interval = Duration::from_nanos(self.duration.subsec_nanos().into());
-
-		let mut end = started + first_interval;
-		let dest = started + self.duration;
+		let start = Instant::now();
+		let duration = dest - start;
+		let first_interval = Duration::from_nanos(duration.subsec_nanos().into());
+		let mut end = start + first_interval;
 
 		while end <= dest {
 			Timer::at(end).await;
