@@ -6,8 +6,7 @@ use humantime::format_duration;
 use winnow::{IResult, Parser};
 use winnow::branch::alt;
 use winnow::bytes::{any, one_of, take_until0};
-use winnow::combinator::{opt, peek, rest};
-use winnow::multi::many0;
+use winnow::combinator::{opt, peek, repeat0, rest};
 use winnow::sequence::preceded;
 
 pub struct Session {
@@ -193,11 +192,11 @@ pub enum TimeFormatToken {
 
 impl TimeFormatToken {
 	pub fn parse(format: &str) -> Vec<TimeFormatToken> {
-		let res: IResult<&str, Vec<TimeFormatToken>> = many0(alt((
+		let res: IResult<&str, Vec<TimeFormatToken>> = repeat0(alt((
 			preceded("%", (opt(one_of("*")), opt(one_of("-_0")), opt(any)).map(Self::identify)),
 			take_until0("%").map(|s: &str| TimeFormatToken::Literal(s.into())),
 			(peek(any), rest).map(|(_, s): (char, &str)| TimeFormatToken::Literal(s.into())),
-		)))(format);
+		))).parse_next(format);
 		res.unwrap().1
 	}
 
