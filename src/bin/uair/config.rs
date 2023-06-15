@@ -44,32 +44,13 @@ impl ConfigBuilder {
 				name: s.name.unwrap_or_else(|| self.defaults.name.clone()),
 				duration: s.duration.unwrap_or_else(|| self.defaults.duration.clone()),
 				command: s.command.unwrap_or_else(|| self.defaults.command.clone()),
-				format: Self::fetch_format(s.format, s.before, s.after, &self.defaults),
+				format: s.format.map(|f| Token::parse(&f)).unwrap_or_else(|| Token::parse(&self.defaults.format)),
 				time_format: TimeFormatToken::parse(s.time_format.as_ref().unwrap_or_else(|| &self.defaults.time_format)),
 				autostart: s.autostart.unwrap_or_else(|| self.defaults.autostart.clone()),
 				paused_state_text: s.paused_state_text.unwrap_or_else(|| self.defaults.paused_state_text.clone()),
 				resumed_state_text: s.resumed_state_text.unwrap_or_else(|| self.defaults.resumed_state_text.clone()),
 			}).collect(),
 		}
-	}
-
-	fn fetch_format(format: Option<String>, before: Option<String>, after: Option<String>, defaults: &Defaults) -> Vec<Token> {
-		match format {
-			Some(format) => Token::parse(&format),
-			None => match (before, after) {
-				(Some(before), Some(after)) => Self::from_before_after(before, after),
-				(Some(before), None) => Self::from_before_after(before, defaults.after.clone()),
-				(None, Some(after)) => Self::from_before_after(defaults.before.clone(), after),
-				_ => match &defaults.format {
-					Some(format) => Token::parse(format),
-					None => Self::from_before_after(defaults.before.clone(), defaults.after.clone())
-				}
-			}
-		}
-	}
-
-	fn from_before_after(before: String, after: String) -> Vec<Token> {
-		vec![Token::Literal(before), Token::Time, Token::Literal(after)]
 	}
 }
 
@@ -82,12 +63,8 @@ pub struct Defaults {
 	duration: Duration,
 	#[serde(default = "Defaults::command")]
 	command: String,
-	#[serde(default = "Defaults::before")]
-	before: String,
-	#[serde(default = "Defaults::after")]
-	after: String,
 	#[serde(default = "Defaults::format")]
-	format: Option<String>,
+	format: String,
 	#[serde (default = "Defaults::time_format")]
 	time_format: String,
 	#[serde(default = "Defaults::autostart")]
@@ -102,9 +79,7 @@ impl Defaults {
 	fn name() -> String { "Work".into() }
 	fn duration() -> Duration { Duration::from_secs(25 * 60) }
 	fn command() -> String { "notify-send 'Session Completed!'".into() }
-	fn before() -> String { "".into() }
-	fn after() -> String { "\n".into() }
-	fn format() -> Option<String> { None }
+	fn format() -> String { "{time}\n".into() }
 	fn time_format() -> String { "%*-Yyear%P %*-Bmonth%P %*-Dday%P %*-Hh %*-Mm %*-Ss".into() }
 	fn autostart() -> bool { false }
 	fn paused_state_text() -> String { "⏸".into() }
@@ -117,8 +92,6 @@ impl Default for Defaults {
 			name: Defaults::name(),
 			duration: Defaults::duration(),
 			command: Defaults::command(),
-			before: Defaults::before(),
-			after: Defaults::after(),
 			format: Defaults::format(),
 			time_format: Defaults::time_format(),
 			autostart: Defaults::autostart(),
@@ -135,8 +108,6 @@ struct SessionBuilder {
 	#[serde(default)]
 	duration: Option<Duration>,
 	command: Option<String>,
-	before: Option<String>,
-	after: Option<String>,
 	format: Option<String>,
 	time_format: Option<String>,
 	autostart: Option<bool>,

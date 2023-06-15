@@ -4,6 +4,10 @@
 
 - New `uairctl` subcommand: `listen`. Allows to output time in the same manner as that of `uair` and hence allowing multiple synchronized timers.
 
+#### Removed
+
+- `after` and `before` session properties for `uair` config. Use `format` session property instead.
+
 ### v0.5.1
 
 #### Fixed
