@@ -63,6 +63,10 @@ impl App {
 			Event::Command(Command::Prev(_)) => self.state = self.data.prev_session(),
 			Event::Fetch(format, stream) =>
 				self.data.handle_fetch_resumed(format, stream, dest).await?,
+			Event::Listen(stream) => {
+				self.timer.add_stream(stream.into_blocking());
+				self.state = State::Resumed(Instant::now(), dest);
+			}
 			_ => unreachable!(),
 		}
 		Ok(())
@@ -95,6 +99,7 @@ impl App {
 			Event::Command(Command::Prev(_)) => self.state = self.data.prev_session(),
 			Event::Fetch(format, stream) =>
 				self.data.handle_fetch_paused(format, stream, duration + DELTA).await?,
+			Event::Listen(stream) => self.timer.add_stream(stream.into_blocking()),
 			_ => unreachable!(),
 		}
 		Ok(())
@@ -105,6 +110,7 @@ pub enum Event {
 	Command(Command),
 	Fetch(String, Stream),
 	Finished,
+	Listen(Stream),
 }
 
 struct AppData {
@@ -148,6 +154,7 @@ impl AppData {
 					return Ok(Event::Command(command)),
 				Command::Fetch(FetchArgs { format }) =>
 					return Ok(Event::Fetch(format, stream)),
+				Command::Listen(_) => return Ok(Event::Listen(stream)),
 				Command::Finish(_) => return Ok(Event::Finished),
 				_ => {}
 			}

@@ -1,3 +1,9 @@
+### Unreleased
+
+#### Added
+
+- New `uairctl` subcommand: `listen`. Allows to output time in the same manner as that of `uair` and hence allowing multiple synchronized timers.
+
 ### v0.5.1
 
 #### Fixed

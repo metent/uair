@@ -1,8 +1,9 @@
-use std::io;
+use std::io::{self, Write};
 use std::fs;
 use std::path::PathBuf;
 use async_net::unix::{UnixListener, UnixStream};
 use futures_lite::{AsyncReadExt, AsyncWriteExt};
+use futures_lite::io::BlockOn;
 
 pub struct Listener {
 	path: PathBuf,
@@ -38,6 +39,22 @@ impl Stream {
 
 	pub async fn write(&mut self, data: &[u8]) -> io::Result<()> {
 		self.stream.write_all(data).await?;
+		Ok(())
+	}
+
+	pub fn into_blocking(self) -> BlockingStream {
+		BlockingStream { stream: BlockOn::new(self.stream) }
+	}
+}
+
+pub struct BlockingStream {
+	stream: BlockOn<UnixStream>,
+}
+
+impl BlockingStream {
+	pub fn write(&mut self, data: &[u8]) -> io::Result<()> {
+		self.stream.write_all(data)?;
+		self.stream.flush()?;
 		Ok(())
 	}
 }

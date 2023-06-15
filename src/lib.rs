@@ -12,6 +12,7 @@ pub enum Command {
 	Prev(PrevArgs),
 	Finish(FinishArgs),
 	Fetch(FetchArgs),
+	Listen(ListenArgs),
 }
 
 #[derive(FromArgs, Serialize, Deserialize)]
@@ -52,6 +53,11 @@ pub struct FetchArgs {
 	#[argh(positional)]
 	pub format: String,
 }
+
+#[derive(FromArgs, Serialize, Deserialize)]
+/// Output time continuously, while remaining in sync with the main 'uair' instance.
+#[argh(subcommand, name = "listen")]
+pub struct ListenArgs {}
 
 pub fn get_socket_path() -> String {
 	if let Ok(xdg_runtime_dir) = env::var("XDG_RUNTIME_DIR") {

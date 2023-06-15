@@ -48,7 +48,7 @@ fn get_config_path() -> String {
 }
 
 async fn catch_term_signals() -> Result<(), Error> {
-	let mut signals = Signals::new(&[SIGTERM, SIGINT, SIGPIPE, SIGQUIT])?;
+	let mut signals = Signals::new(&[SIGTERM, SIGINT, SIGQUIT])?;
 	signals.next().await;
 	Ok(())
 }

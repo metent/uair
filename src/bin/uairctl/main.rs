@@ -1,6 +1,7 @@
-use std::io::{self, Read, Write};
+use std::io::{self, BufRead, BufReader, Read, Write};
 use std::net::Shutdown;
 use std::os::unix::net::UnixStream;
+use std::str;
 use uair::{Command, FetchArgs, get_socket_path};
 use argh::FromArgs;
 
@@ -16,11 +17,25 @@ fn main() -> Result<(), Error> {
 	stream.write_all(&command)?;
 	stream.shutdown(Shutdown::Write)?;
 
-	if let Command::Fetch(_) = args.command {
-		let mut buf = String::new();
-		stream.read_to_string(&mut buf)?;
+	match args.command {
+		Command::Fetch(_) => {
+			let mut buf = String::new();
+			stream.read_to_string(&mut buf)?;
 
-		write!(io::stdout(), "{}", buf)?;
+			write!(io::stdout(), "{}", buf)?;
+		}
+		Command::Listen(_) => {
+			let mut reader = BufReader::new(stream);
+			let mut buf = Vec::new();
+
+			loop {
+				reader.read_until(b'\0', &mut buf)?;
+				if buf.is_empty() { break; }
+				write!(io::stdout(), "{}", str::from_utf8(&buf)?)?;
+				buf.clear();
+			}
+		}
+		_ => {}
 	}
 
 	Ok(())
@@ -95,6 +110,8 @@ enum Error {
 	SerError(#[from] bincode::Error),
 	#[error("Socket Connection Error: {0}")]
 	IoError(#[from] io::Error),
+	#[error("UTF8 Error: {0}")]
+	Utf8Error(#[from] str::Utf8Error),
 }
 
 #[cfg(test)]

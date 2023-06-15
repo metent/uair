@@ -187,6 +187,6 @@ uair | yad --progress
 - [X] next/prev subcommands
 - [X] Format specifiers
 - [ ] Ability to reload configuration
-- [ ] uairctl listen subcommand: for multiple synchonized timers
+- [X] uairctl listen subcommand: for multiple synchonized timers
 - [ ] Dedicated GUI client
 - [ ] Dedicated crossterm client
