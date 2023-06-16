@@ -3,6 +3,8 @@
 #### Added
 
 - New `uairctl` subcommand: `listen`. Allows to output time in the same manner as that of `uair` and hence allowing multiple synchronized timers.
+- New `uair` config session property: `overrides`. Allows to create named overrides which can be optionally specified during invocation of `listen`. Overrides allow the listening instance to output time in a different format than that of the main instance.
+- New `uairctl` flag for `listen` subcommand: `-o` or `--override`. Allows to specify a named override created in `uair` config.
 
 #### Removed
 

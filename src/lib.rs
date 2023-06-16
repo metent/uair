@@ -57,7 +57,11 @@ pub struct FetchArgs {
 #[derive(FromArgs, Serialize, Deserialize)]
 /// Output time continuously, while remaining in sync with the main 'uair' instance.
 #[argh(subcommand, name = "listen")]
-pub struct ListenArgs {}
+pub struct ListenArgs {
+	/// override to apply
+	#[argh(option, short = 'o', long = "override")]
+	pub overrid: Option<String>,
+}
 
 pub fn get_socket_path() -> String {
 	if let Ok(xdg_runtime_dir) = env::var("XDG_RUNTIME_DIR") {

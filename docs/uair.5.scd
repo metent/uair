@@ -58,6 +58,9 @@ The number of pomodoro sessions and their properties can be specified by an uair
 *resumed_state_text*
 	Text which is displayed by the *{state}* format specifier when the timer is resumed.
 
+*overrides*
+	A table consisting of OVERRIDABLES as values and their names as keys. It allows to specify named overrides to be applied during `uairctl listen` See OVERRIDABLES section for more information and for the list of overridable properties.
+
 # FORMAT SPECIFIERS
 
 The format property of a session is a string which specifies what and how text is printed every second. For example, the following format string can be used to print the name of the session followed by the remaining time, followed by the total duration of the session, all in cyan color.
@@ -153,6 +156,22 @@ The list of optional padding flags is:
 	Do not pad
 
 An optional '\*' flag may follow '%' to skip the quantity specified by the format specifier and skip all text before the next quantifiable format specifier.
+
+# OVERRIDABLES
+
+Each value in the 'overrides' session property is a table named OVERRIDABLES which can contain one or more of the following properties.
+
+*format*
+	Specifies the format in which text is printed each second. See FORMAT SPECIFIERS section for details.
+
+*time_format*
+	Specifies the format in which *{time}* format specifier prints time. See TIME FORMAT SPECIFIERS section for details.
+
+*paused_state_text*
+	Text which is displayed by the *{state}* format specifier when the timer is paused.
+
+*resumed_state_text*
+	Text which is displayed by the *{state}* format specifier when the timer is resumed.
 
 # COMMAND ENVIRONMENT
 

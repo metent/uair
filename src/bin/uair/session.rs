@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt::{self, Display, Formatter};
 use std::io;
 use std::process;
@@ -18,22 +19,23 @@ pub struct Session {
 	pub autostart: bool,
 	pub paused_state_text: String,
 	pub resumed_state_text: String,
+	pub overrides: HashMap<String, Overridables>,
 }
 
 impl Session {
-	pub fn display<const R: bool>(&self, time: Duration) -> DisplayableSession<'_, '_, '_, R> {
+	pub fn display<'s, const R: bool>(&'s self, time: Duration, overrid: Option<&'s Overridables>) -> DisplayableSession<'s, R> {
 		DisplayableSession {
 			session: self,
-			time: DisplayableTime { time, format: &self.time_format },
-			format: &self.format
+			time: DisplayableTime { time, format: overrid.and_then(|o| o.time_format.as_ref()).unwrap_or(&self.time_format) },
+			format: overrid.and_then(|o| o.format.as_ref()).unwrap_or(&self.format),
 		}
 	}
 
-	pub fn display_with_format<'session, 'token, const R: bool>(
-		&'session self,
+	pub fn display_with_format<'s, const R: bool>(
+		&'s self,
 		time: Duration,
-		format: &'token [Token]
-	) -> DisplayableSession<'session, 'token, '_, R> {
+		format: &'s [Token]
+	) -> DisplayableSession<'s, R> {
 		DisplayableSession {
 			session: self,
 			time: DisplayableTime { time, format: &self.time_format },
@@ -55,13 +57,21 @@ impl Session {
 	}
 }
 
-pub struct DisplayableSession<'session, 'token, 'tftoken, const R: bool> {
-	session: &'session Session,
-	time: DisplayableTime<'tftoken>,
-	format: &'token[Token],
+#[derive(Clone)]
+pub struct Overridables {
+	pub format: Option<Vec<Token>>,
+	pub time_format: Option<Vec<TimeFormatToken>>,
+	pub paused_state_text: Option<String>,
+	pub resumed_state_text: Option<String>,
 }
 
-impl<'session, 'token, 'tftoken, const R: bool> Display for DisplayableSession<'session, 'token, 'tftoken, R> {
+pub struct DisplayableSession<'s, const R: bool> {
+	session: &'s Session,
+	time: DisplayableTime<'s>,
+	format: &'s[Token],
+}
+
+impl<'s, const R: bool> Display for DisplayableSession<'s, R> {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		for token in self.format {
 			match token {
@@ -92,12 +102,12 @@ impl<'session, 'token, 'tftoken, const R: bool> Display for DisplayableSession<'
 	}
 }
 
-struct DisplayableTime<'tftoken> {
+struct DisplayableTime<'s> {
 	time: Duration,
-	format: &'tftoken[TimeFormatToken],
+	format: &'s[TimeFormatToken],
 }
 
-impl<'tftoken> Display for DisplayableTime<'tftoken> {
+impl<'s> Display for DisplayableTime<'s> {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		let secs = self.time.as_secs();
 		let years = secs / 31_557_600;
@@ -147,6 +157,7 @@ impl<'tftoken> Display for DisplayableTime<'tftoken> {
 	}
 }
 
+#[derive(Clone)]
 #[cfg_attr(test, derive(PartialEq, Debug))]
 pub enum Token {
 	Name,
@@ -183,6 +194,7 @@ impl Token {
 	}
 }
 
+#[derive(Clone)]
 #[cfg_attr(test, derive(PartialEq, Debug))]
 pub enum TimeFormatToken {
 	Numeric(Numeric, Pad, bool),
@@ -227,6 +239,7 @@ impl TimeFormatToken {
 	}
 }
 
+#[derive(Clone)]
 #[cfg_attr(test, derive(PartialEq, Debug))]
 pub enum Numeric {
 	Year,
@@ -237,6 +250,7 @@ pub enum Numeric {
 	Second,
 }
 
+#[derive(Clone)]
 #[cfg_attr(test, derive(PartialEq, Debug))]
 pub enum Pad {
 	Zero,
@@ -244,6 +258,7 @@ pub enum Pad {
 	None,
 }
 
+#[derive(Clone)]
 #[cfg_attr(test, derive(PartialEq, Debug))]
 pub enum Color {
 	Black,

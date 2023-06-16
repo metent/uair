@@ -1,7 +1,7 @@
 use std::io::{self, Write, Error as IoError, ErrorKind};
 use std::fs;
 use std::time::{Duration, Instant};
-use uair::{Command, FetchArgs, PauseArgs, ResumeArgs};
+use uair::{Command, FetchArgs, ListenArgs, PauseArgs, ResumeArgs};
 use futures_lite::FutureExt;
 use crate::{Args, Error};
 use crate::config::{Config, ConfigBuilder};
@@ -63,8 +63,16 @@ impl App {
 			Event::Command(Command::Prev(_)) => self.state = self.data.prev_session(),
 			Event::Fetch(format, stream) =>
 				self.data.handle_fetch_resumed(format, stream, dest).await?,
-			Event::Listen(stream) => {
-				self.timer.add_stream(stream.into_blocking());
+			Event::Listen(Some(overrid), mut stream) => {
+				if let Some(overrid) = session.overrides.get(&overrid) {
+					self.timer.add_stream(stream.into_blocking(), Some(overrid.clone()));
+				} else {
+					stream.write(&[0]).await?;
+				}
+				self.state = State::Resumed(Instant::now(), dest);
+			}
+			Event::Listen(_, stream) => {
+				self.timer.add_stream(stream.into_blocking(), None);
 				self.state = State::Resumed(Instant::now(), dest);
 			}
 			_ => unreachable!(),
@@ -74,11 +82,9 @@ impl App {
 
 	async fn pause_session(&mut self, duration: Duration) -> Result<(), Error> {
 		const DELTA: Duration = Duration::from_nanos(1_000_000_000 - 1);
-		let mut stdout = io::stdout();
 		let session = self.data.curr_session();
 
-		write!(stdout, "{}", session.display::<false>(duration + DELTA))?;
-		stdout.flush()?;
+		self.timer.write::<false>(session, duration + DELTA)?;
 
 		match self.data.handle_commands::<false>().await? {
 			Event::Finished => {
@@ -90,8 +96,7 @@ impl App {
 				}
 			}
 			Event::Command(Command::Resume(_)) => {
-				write!(stdout, "{}", session.display::<true>(duration + DELTA))?;
-				stdout.flush()?;
+				self.timer.write::<true>(session, duration + DELTA)?;
 				let start = Instant::now();
 				self.state = State::Resumed(start, start + duration);
 			}
@@ -99,7 +104,12 @@ impl App {
 			Event::Command(Command::Prev(_)) => self.state = self.data.prev_session(),
 			Event::Fetch(format, stream) =>
 				self.data.handle_fetch_paused(format, stream, duration + DELTA).await?,
-			Event::Listen(stream) => self.timer.add_stream(stream.into_blocking()),
+			Event::Listen(Some(overrid), mut stream) => if let Some(overrid) = session.overrides.get(&overrid) {
+				self.timer.add_stream(stream.into_blocking(), Some(overrid.clone()));
+			} else {
+				stream.write(&[0]).await?;
+			}
+			Event::Listen(_, stream) => self.timer.add_stream(stream.into_blocking(), None),
 			_ => unreachable!(),
 		}
 		Ok(())
@@ -110,7 +120,7 @@ pub enum Event {
 	Command(Command),
 	Fetch(String, Stream),
 	Finished,
-	Listen(Stream),
+	Listen(Option<String>, Stream),
 }
 
 struct AppData {
@@ -154,7 +164,7 @@ impl AppData {
 					return Ok(Event::Command(command)),
 				Command::Fetch(FetchArgs { format }) =>
 					return Ok(Event::Fetch(format, stream)),
-				Command::Listen(_) => return Ok(Event::Listen(stream)),
+				Command::Listen(ListenArgs { overrid }) => return Ok(Event::Listen(overrid, stream)),
 				Command::Finish(_) => return Ok(Event::Finished),
 				_ => {}
 			}

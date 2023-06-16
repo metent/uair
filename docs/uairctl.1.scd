@@ -39,8 +39,8 @@ finish
 fetch [FORMAT]
 	Fetches information and displays it in the format specified by the format text [FORMAT]. Formatting of input text is done using the same format specifiers specified in FORMAT SPECIFIERS sections in uair(5).
 
-listen
-	Output time continuously, while remaining in sync with the main 'uair' instance.
+listen [-o | --override OVERRIDE]
+	Output time continuously, while remaining in sync with the main 'uair' instance. Using the optional '-o' flag, a named override specified in uair config can be mentioned, which allows the listening instance to output time in a different format. See 'overrides' property in SESSION PROPERTIES section and the OVERRIDABLES section in uair(5) for more details.
 
 # DESCRIPTION
 

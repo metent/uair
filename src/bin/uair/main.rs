@@ -5,6 +5,7 @@ mod session;
 mod timer;
 
 use std::env;
+use std::fmt;
 use std::io;
 use uair::get_socket_path;
 use argh::FromArgs;
@@ -61,4 +62,6 @@ pub enum Error {
 	ConfError(#[from] toml::de::Error),
 	#[error("Deserialization Error: {0}")]
 	DeserError(#[from] bincode::Error),
+	#[error("Formatting Error: {0}")]
+	FmtError(#[from] fmt::Error),
 }
