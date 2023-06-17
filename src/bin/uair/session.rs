@@ -28,6 +28,8 @@ impl Session {
 			session: self,
 			time: DisplayableTime { time, format: overrid.and_then(|o| o.time_format.as_ref()).unwrap_or(&self.time_format) },
 			format: overrid.and_then(|o| o.format.as_ref()).unwrap_or(&self.format),
+			pst_override: overrid.and_then(|o| o.paused_state_text.as_ref().map(|s| s.as_str())),
+			rst_override: overrid.and_then(|o| o.resumed_state_text.as_ref().map(|s| s.as_str())),
 		}
 	}
 
@@ -39,7 +41,9 @@ impl Session {
 		DisplayableSession {
 			session: self,
 			time: DisplayableTime { time, format: &self.time_format },
-			format
+			format,
+			pst_override: None,
+			rst_override: None,
 		}
 	}
 
@@ -69,6 +73,8 @@ pub struct DisplayableSession<'s, const R: bool> {
 	session: &'s Session,
 	time: DisplayableTime<'s>,
 	format: &'s[Token],
+	pst_override: Option<&'s str>,
+	rst_override: Option<&'s str>,
 }
 
 impl<'s, const R: bool> Display for DisplayableSession<'s, R> {
@@ -82,9 +88,9 @@ impl<'s, const R: bool> Display for DisplayableSession<'s, R> {
 				Token::Time => write!(f, "{}", self.time)?,
 				Token::Total => write!(f, "{}", format_duration(self.session.duration))?,
 				Token::State => write!(f, "{}", if R {
-					&self.session.resumed_state_text
+					self.rst_override.unwrap_or(&self.session.resumed_state_text)
 				} else {
-					&self.session.paused_state_text
+					self.pst_override.unwrap_or(&self.session.paused_state_text)
 				})?,
 				Token::Color(Color::Black) => write!(f, "{}", "\x1b[0;30m")?,
 				Token::Color(Color::Red) => write!(f, "{}", "\x1b[0;31m")?,
