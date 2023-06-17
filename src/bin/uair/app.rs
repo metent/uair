@@ -1,7 +1,7 @@
 use std::io::{self, Write, Error as IoError, ErrorKind};
 use std::fs;
 use std::time::{Duration, Instant};
-use uair::{Command, FetchArgs, ListenArgs, PauseArgs, ResumeArgs};
+use uair::{Command, FetchArgs, ListenArgs, PauseArgs, ResumeArgs, JumpArgs};
 use futures_lite::FutureExt;
 use crate::{Args, Error};
 use crate::config::{Config, ConfigBuilder};
@@ -61,6 +61,7 @@ impl App {
 			Event::Command(Command::Pause(_)) => self.state = State::Paused(dest - Instant::now()),
 			Event::Command(Command::Next(_)) => self.state = self.data.next_session(),
 			Event::Command(Command::Prev(_)) => self.state = self.data.prev_session(),
+			Event::Jump(idx) => self.state = self.data.jump_session(idx),
 			Event::Fetch(format, stream) =>
 				self.data.handle_fetch_resumed(format, stream, dest).await?,
 			Event::Listen(Some(overrid), mut stream) => {
@@ -102,6 +103,7 @@ impl App {
 			}
 			Event::Command(Command::Next(_)) => self.state = self.data.next_session(),
 			Event::Command(Command::Prev(_)) => self.state = self.data.prev_session(),
+			Event::Jump(idx) => self.state = self.data.jump_session(idx),
 			Event::Fetch(format, stream) =>
 				self.data.handle_fetch_paused(format, stream, duration + DELTA).await?,
 			Event::Listen(Some(overrid), mut stream) => if let Some(overrid) = session.overrides.get(&overrid) {
@@ -118,6 +120,7 @@ impl App {
 
 pub enum Event {
 	Command(Command),
+	Jump(usize),
 	Fetch(String, Stream),
 	Finished,
 	Listen(Option<String>, Stream),
@@ -138,7 +141,7 @@ impl AppData {
 				format!("Could not load config file \"{}\"", args.config),
 			))),
 		};
-		let config = ConfigBuilder::deserialize(&conf_data)?.build();
+		let config = ConfigBuilder::deserialize(&conf_data)?.build()?;
 		Ok(AppData {
 			listener: Listener::new(&args.socket)?,
 			sid: SessionId::new(&config.sessions, config.iterations),
@@ -162,10 +165,13 @@ impl AppData {
 					return Ok(Event::Command(command)),
 				Command::Prev(_) if !self.sid.is_first() =>
 					return Ok(Event::Command(command)),
+				Command::Finish(_) => return Ok(Event::Finished),
+				Command::Jump(JumpArgs { id }) => if let Some(idx) = self.config.idmap.get(&id) {
+					return Ok(Event::Jump(*idx));
+				}
 				Command::Fetch(FetchArgs { format }) =>
 					return Ok(Event::Fetch(format, stream)),
 				Command::Listen(ListenArgs { overrid }) => return Ok(Event::Listen(overrid, stream)),
-				Command::Finish(_) => return Ok(Event::Finished),
 				_ => {}
 			}
 		}
@@ -207,6 +213,11 @@ impl AppData {
 
 	fn prev_session(&mut self) -> State {
 		self.sid = self.sid.prev();
+		self.new_state()
+	}
+
+	fn jump_session(&mut self, idx: usize) -> State {
+		self.sid = self.sid.jump(idx);
 		self.new_state()
 	}
 

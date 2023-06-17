@@ -328,6 +328,10 @@ impl SessionId {
 		prev
 	}
 
+	pub fn jump(&self, idx: usize) -> SessionId {
+		SessionId { index: idx, ..*self }
+	}
+
 	pub fn is_last(&self) -> bool {
 		self.index == self.len - 1 && !self.infinite && self.iter_no == self.total_iter - 1
 	}

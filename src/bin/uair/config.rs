@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::time::Duration;
 use std::str::FromStr;
 use serde::{Serialize, Deserialize};
+use serde::de::Error as _;
+use toml::de::Error;
 use crate::session::{Color, Overridables, Session, Token, TimeFormatToken};
 
 pub struct Config {
@@ -9,6 +11,7 @@ pub struct Config {
 	pub pause_at_start: bool,
 	pub startup_text: String,
 	pub sessions: Vec<Session>,
+	pub idmap: HashMap<String, usize>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -26,12 +29,23 @@ pub struct ConfigBuilder {
 }
 
 impl ConfigBuilder {
-	pub fn deserialize(conf: &str) -> Result<Self, toml::de::Error> {
+	pub fn deserialize(conf: &str) -> Result<Self, Error> {
 		toml::from_str(conf)
 	}
 
-	pub fn build(self) -> Config {
-		Config {
+	pub fn build(self) -> Result<Config, Error> {
+		let mut idmap = HashMap::new();
+		let mut sessions = Vec::new();
+		for (idx, session) in self.sessions.into_iter().enumerate() {
+			let (id, session) = session.build(&self.defaults);
+			sessions.push(session);
+			let id = id.unwrap_or_else(|| idx.to_string());
+			if let Some(idx2) = idmap.get(&id) {
+				return Err(Error::custom(format!("Duplicate identifier {} present at index {} and {}.", id, idx, idx2)));
+			}
+			idmap.insert(id, idx);
+		}
+		Ok(Config {
 			iterations: if self.loop_on_end && self.iterations != Some(0) {
 				None
 			} else if self.iterations.is_some() {
@@ -41,8 +55,9 @@ impl ConfigBuilder {
 			},
 			pause_at_start: self.pause_at_start,
 			startup_text: self.startup_text,
-			sessions: self.sessions.into_iter().map(|s| s.build(&self.defaults)).collect(),
-		}
+			sessions,
+			idmap,
+		})
 	}
 }
 
@@ -99,6 +114,7 @@ impl Default for Defaults {
 
 #[derive(Serialize, Deserialize)]
 struct SessionBuilder {
+	id: Option<String>,
 	name: Option<String>,
 	#[serde(with = "humantime_serde")]
 	#[serde(default)]
@@ -114,14 +130,14 @@ struct SessionBuilder {
 }
 
 impl SessionBuilder {
-	fn build(self, defaults: &Defaults) -> Session {
+	fn build(self, defaults: &Defaults) -> (Option<String>, Session) {
 		let mut default_overrides = defaults.overrides.clone();
 		default_overrides.extend(self.overrides);
 		let overrides = default_overrides.into_iter().map(|(k, v)| {
 			let default = defaults.overrides.get(&k);
 			(k, v.build(default))
 		}).collect();
-		Session {
+		(self.id, Session {
 			name: self.name.unwrap_or_else(|| defaults.name.clone()),
 			duration: self.duration.unwrap_or_else(|| defaults.duration.clone()),
 			command: self.command.unwrap_or_else(|| defaults.command.clone()),
@@ -131,7 +147,7 @@ impl SessionBuilder {
 			paused_state_text: self.paused_state_text.unwrap_or_else(|| defaults.paused_state_text.clone()),
 			resumed_state_text: self.resumed_state_text.unwrap_or_else(|| defaults.resumed_state_text.clone()),
 			overrides,
-		}
+		})
 	}
 }
 

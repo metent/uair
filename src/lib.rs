@@ -11,6 +11,7 @@ pub enum Command {
 	Next(NextArgs),
 	Prev(PrevArgs),
 	Finish(FinishArgs),
+	Jump(JumpArgs),
 	Fetch(FetchArgs),
 	Listen(ListenArgs),
 }
@@ -44,6 +45,15 @@ pub struct PrevArgs {}
 /// Instantly finishes the current session, invoking the session's specified command.
 #[argh(subcommand, name = "finish")]
 pub struct FinishArgs {}
+
+#[derive(FromArgs, Serialize, Deserialize)]
+/// Jump to the session with the given id.
+#[argh(subcommand, name = "jump")]
+pub struct JumpArgs {
+	/// id of the session
+	#[argh(positional)]
+	pub id: String,
+}
 
 #[derive(FromArgs, Serialize, Deserialize)]
 /// Fetch timer information.
