@@ -7,6 +7,8 @@
 - Extensible: Can be used in status bars, desktop widgets, CLIs, GUIs, etc.
 - Keyboard-driven: Uses `uairctl` command-line utility for pausing/resuming the timer. It can be binded to a keyboard shortcut.
 - Resource-efficient: Uses concurrency instead of spawing multiple threads.
+- Multiple synchronized timers: Multiple synchronized `uair` timers can co-exist while sharing a single handle
+- Minimal: It adheres to the UNIX philosophy of focusing in doing one thing, and doing it well.
 
 ## Installation
 
@@ -75,6 +77,11 @@ To toggle between pause and resume states, use
 uairctl toggle
 ```
 
+To start another instance synced with this one, you can use
+```
+uairctl listen
+```
+
 ### Configuration
 
 Configuration is done in TOML. If a config file is not specified by the `-c` flag, it is sourced according to the XDG Base Directory Specification, i.e. it looks for the config file in the following order, until it successfully finds one.
@@ -90,30 +97,36 @@ Example Config:
 format = "{time}\n"
 
 [[sessions]]
+id = "work"
 name = "Work"
 duration = "30m"
 command = "notify-send 'Work Done!'"
 
 [[sessions]]
+id = "rest"
 name = "Rest"
 duration = "5m"
 command = "notify-send 'Rest Done!'"
 
 [[sessions]]
+id = "hardwork"
 name = "Work, but harder"
 duration = "1h 30m"
 command = "notify-send 'Hard Work Done!'"
 ```
 
-A list of sessions has to be provided in the `sessions` key. Each session is a table with the following keys:
+A list of sessions has to be provided in the `sessions` key. Each session is a table containing the properties of the session. Some of those properties are listed as follows:
 
+- `id`: unique identifier of the session
 - `name`: name of the session
 - `duration`: duration of the session
 - `command`: command which is run when the session finishes
 - `format`: specifies the format in which text is printed each second
 - `autostart`: boolean value (true or false) which dictates whether the session automatically starts.
 
-If a property of a session in the array is unspecified, the default value specified in the `defaults` section is used instead. If the property is not mentioned in the default section too, then the property is sourced from a list of hard-coded defaults.
+If a property of a session in the array is unspecified, the default value specified in the `defaults` section is used instead. The exception to this rule is the `id` property which, if unspecified, defaults to the index(starting from 0) of session in the sessions array. If the property is not mentioned in the default section too, then the property is sourced from a list of hard-coded defaults.
+
+It is recommended to specify an `id` for every session as it makes it possible for `uair` to keep track of the current session while reloading the config file. It also makes it convenient to jump to any session using its `id` using `uairctl jump` command.
 
 ### Integration with polybar
 
@@ -140,6 +153,7 @@ In order for it to be displayed, a newline should be printed after printing the 
 format = "{time}\n"
 
 [[sessions]]
+id = "work"
 name = "Work"
 duration = "30m"
 command = "notify-send 'Work Done!'"
@@ -152,6 +166,7 @@ command = "notify-send 'Work Done!'"
 format = "\r{time}           "
 
 [[sessions]]
+id = "work"
 name = "Work"
 duration = "1h 30m"
 command = "notify-send 'Work Done!'"
@@ -170,6 +185,7 @@ clear && uair
 format = "{percent}\n#{time}\n"
 
 [[sessions]]
+id = "work"
 name = "Work"
 duration = "1h 30m"
 command = "notify-send 'Work Done!'"
@@ -178,7 +194,7 @@ command = "notify-send 'Work Done!'"
 Run with:
 
 ```
-uair | yad --progress
+uair | yad --progress --no-buttons --css="* { font-size: 80px; }"
 ```
 
 ## Roadmap
@@ -186,7 +202,7 @@ uair | yad --progress
 - [X] Basic pause/resume functionality using UNIX sockets
 - [X] next/prev subcommands
 - [X] Format specifiers
-- [ ] Ability to reload configuration
+- [X] Ability to reload configuration
 - [X] uairctl listen subcommand: for multiple synchonized timers
 - [ ] Dedicated GUI client
 - [ ] Dedicated crossterm client
