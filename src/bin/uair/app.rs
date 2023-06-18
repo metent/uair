@@ -62,6 +62,10 @@ impl App {
 			Event::Command(Command::Next(_)) => self.state = self.data.next_session(),
 			Event::Command(Command::Prev(_)) => self.state = self.data.prev_session(),
 			Event::Jump(idx) => self.state = self.data.jump_session(idx),
+			Event::Command(Command::Reload(_)) => {
+				self.data.read_conf::<true>()?;
+				self.state = State::Resumed(Instant::now(), dest);
+			}
 			Event::Fetch(format, stream) =>
 				self.data.handle_fetch_resumed(format, stream, dest).await?,
 			Event::Listen(Some(overrid), mut stream) => {
@@ -104,6 +108,7 @@ impl App {
 			Event::Command(Command::Next(_)) => self.state = self.data.next_session(),
 			Event::Command(Command::Prev(_)) => self.state = self.data.prev_session(),
 			Event::Jump(idx) => self.state = self.data.jump_session(idx),
+			Event::Command(Command::Reload(_)) => self.data.read_conf::<true>()?,
 			Event::Fetch(format, stream) =>
 				self.data.handle_fetch_paused(format, stream, duration + DELTA).await?,
 			Event::Listen(Some(overrid), mut stream) => if let Some(overrid) = session.overrides.get(&overrid) {
@@ -130,23 +135,44 @@ struct AppData {
 	listener: Listener,
 	sid: SessionId,
 	config: Config,
+	config_path: String,
 }
 
 impl AppData {
 	fn new(args: Args) -> Result<Self, Error> {
-		let conf_data = match fs::read_to_string(&args.config) {
-			Ok(c) => c,
-			Err(_) => return Err(Error::IoError(IoError::new(
-				ErrorKind::NotFound,
-				format!("Could not load config file \"{}\"", args.config),
-			))),
-		};
-		let config = ConfigBuilder::deserialize(&conf_data)?.build()?;
-		Ok(AppData {
+		let mut data = AppData {
 			listener: Listener::new(&args.socket)?,
-			sid: SessionId::new(&config.sessions, config.iterations),
-			config,
-		})
+			sid: SessionId::default(),
+			config: Config::default(),
+			config_path: args.config,
+		};
+		data.read_conf::<false>()?;
+		Ok(data)
+	}
+
+	fn read_conf<const R: bool>(&mut self) -> Result<(), Error> {
+		let conf_data = fs::read_to_string(&self.config_path).map_err(|_|
+			Error::IoError(IoError::new(
+				ErrorKind::NotFound,
+				format!("Could not load config file \"{}\"", self.config_path),
+			)
+		))?;
+		let config = ConfigBuilder::deserialize(&conf_data)?.build()?;
+		let mut sid = SessionId::new(&config.sessions, config.iterations);
+
+		if R {
+			let curr_id = &self.curr_session().id;
+			if let Some(&idx) = config.idmap.get(curr_id) {
+				sid = sid.jump(idx);
+			}
+			if self.sid.iter_no < sid.total_iter {
+				sid.iter_no = self.sid.iter_no;
+			}
+		}
+
+		self.config = config;
+		self.sid = sid;
+		Ok(())
 	}
 
 	async fn handle_commands<const R: bool>(&self) -> Result<Event, Error> {
@@ -169,6 +195,7 @@ impl AppData {
 				Command::Jump(JumpArgs { id }) => if let Some(idx) = self.config.idmap.get(&id) {
 					return Ok(Event::Jump(*idx));
 				}
+				Command::Reload(_) => return Ok(Event::Command(command)),
 				Command::Fetch(FetchArgs { format }) =>
 					return Ok(Event::Fetch(format, stream)),
 				Command::Listen(ListenArgs { overrid }) => return Ok(Event::Listen(overrid, stream)),

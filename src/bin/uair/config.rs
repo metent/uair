@@ -6,6 +6,7 @@ use serde::de::Error as _;
 use toml::de::Error;
 use crate::session::{Color, Overridables, Session, Token, TimeFormatToken};
 
+#[derive(Default)]
 pub struct Config {
 	pub iterations: Option<u64>,
 	pub pause_at_start: bool,
@@ -37,13 +38,12 @@ impl ConfigBuilder {
 		let mut idmap = HashMap::new();
 		let mut sessions = Vec::new();
 		for (idx, session) in self.sessions.into_iter().enumerate() {
-			let (id, session) = session.build(&self.defaults);
-			sessions.push(session);
-			let id = id.unwrap_or_else(|| idx.to_string());
-			if let Some(idx2) = idmap.get(&id) {
-				return Err(Error::custom(format!("Duplicate identifier {} present at index {} and {}.", id, idx, idx2)));
+			let session = session.build(&self.defaults, idx);
+			if let Some(idx2) = idmap.get(&session.id) {
+				return Err(Error::custom(format!("Duplicate identifier {} present at index {} and {}.", session.id, idx, idx2)));
 			}
-			idmap.insert(id, idx);
+			idmap.insert(session.id.clone(), idx);
+			sessions.push(session);
 		}
 		Ok(Config {
 			iterations: if self.loop_on_end && self.iterations != Some(0) {
@@ -130,14 +130,15 @@ struct SessionBuilder {
 }
 
 impl SessionBuilder {
-	fn build(self, defaults: &Defaults) -> (Option<String>, Session) {
+	fn build(self, defaults: &Defaults, idx: usize) -> Session {
 		let mut default_overrides = defaults.overrides.clone();
 		default_overrides.extend(self.overrides);
 		let overrides = default_overrides.into_iter().map(|(k, v)| {
 			let default = defaults.overrides.get(&k);
 			(k, v.build(default))
 		}).collect();
-		(self.id, Session {
+		Session {
+			id: self.id.unwrap_or_else(|| idx.to_string()),
 			name: self.name.unwrap_or_else(|| defaults.name.clone()),
 			duration: self.duration.unwrap_or_else(|| defaults.duration.clone()),
 			command: self.command.unwrap_or_else(|| defaults.command.clone()),
@@ -147,7 +148,7 @@ impl SessionBuilder {
 			paused_state_text: self.paused_state_text.unwrap_or_else(|| defaults.paused_state_text.clone()),
 			resumed_state_text: self.resumed_state_text.unwrap_or_else(|| defaults.resumed_state_text.clone()),
 			overrides,
-		})
+		}
 	}
 }
 

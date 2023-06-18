@@ -11,6 +11,7 @@ use winnow::combinator::{opt, peek, repeat, rest};
 use winnow::sequence::preceded;
 
 pub struct Session {
+	pub id: String,
 	pub name: String,
 	pub duration: Duration,
 	pub command: String,
@@ -278,13 +279,13 @@ pub enum Color {
 	End,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 pub struct SessionId {
 	index: usize,
 	len: usize,
-	iter_no: u64,
-	total_iter: u64,
 	infinite: bool,
+	pub iter_no: u64,
+	pub total_iter: u64,
 }
 
 impl SessionId {
@@ -292,9 +293,9 @@ impl SessionId {
 		SessionId {
 			index: 0,
 			len: sessions.len(),
+			infinite: iterations.is_none(),
 			iter_no: 0,
 			total_iter: iterations.unwrap_or(0),
-			infinite: iterations.is_none(),
 		}
 	}
 

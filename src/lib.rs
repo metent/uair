@@ -12,6 +12,7 @@ pub enum Command {
 	Prev(PrevArgs),
 	Finish(FinishArgs),
 	Jump(JumpArgs),
+	Reload(ReloadArgs),
 	Fetch(FetchArgs),
 	Listen(ListenArgs),
 }
@@ -54,6 +55,11 @@ pub struct JumpArgs {
 	#[argh(positional)]
 	pub id: String,
 }
+
+#[derive(FromArgs, Serialize, Deserialize)]
+/// Reload the config file.
+#[argh(subcommand, name = "reload")]
+pub struct ReloadArgs {}
 
 #[derive(FromArgs, Serialize, Deserialize)]
 /// Fetch timer information.

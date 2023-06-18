@@ -39,6 +39,9 @@ finish
 jump [ID]
 	Jumps to the session with the given id, [ID].
 
+reload
+	Reload the config file. If the new configuration contains a session with the same ID as that of the current session, this session is treated as the new current session, otherwise, the first session is treated as the new current session. The state of the timer (paused or resumed) or the remaining duration of the current session remains unchanged.
+
 fetch [FORMAT]
 	Fetches information and displays it in the format specified by the format text [FORMAT]. Formatting of input text is done using the same format specifiers specified in FORMAT SPECIFIERS sections in uair(5).
 
