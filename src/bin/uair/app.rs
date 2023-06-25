@@ -18,24 +18,15 @@ pub struct App {
 impl App {
 	pub fn new(args: Args) -> Result<Self, Error> {
 		let data = AppData::new(args)?;
-		let state = data.initial_state();
 		Ok(App {
 			data,
-			state,
+			state: State::Paused(Duration::ZERO),
 			timer: UairTimer::new(Duration::from_secs(1)),
 		})
 	}
 
 	pub async fn run(mut self) -> Result<(), Error> {
-		let mut stdout = io::stdout();
-		write!(stdout, "{}", self.data.config.startup_text)?;
-		stdout.flush()?;
-
-		if self.data.config.pause_at_start {
-			self.data.handle_commands::<false>().await?;
-			self.state = self.data.new_state();
-		}
-
+		self.start_up().await?;
 		loop {
 			match self.state {
 				State::Paused(duration) => self.pause_session(duration).await?,
@@ -43,6 +34,37 @@ impl App {
 				State::Finished => break,
 			}
 		}
+		Ok(())
+	}
+
+	async fn start_up(&mut self) -> Result<(), Error> {
+		let mut stdout = io::stdout();
+		write!(stdout, "{}", self.data.config.startup_text)?;
+		stdout.flush()?;
+
+		if !self.data.config.pause_at_start { return Ok(()); }
+
+		loop {
+			match self.data.handle_commands::<false>().await? {
+				Event::Finished | Event::Command(Command::Resume(_) | Command::Next(_)) => {
+					self.state = self.data.initial_state();
+					break;
+				}
+				Event::Command(Command::Prev(_)) => {},
+				Event::Jump(idx) => { self.state = self.data.initial_jump(idx); break; }
+				Event::Command(Command::Reload(_)) => self.data.read_conf::<true>()?,
+				Event::Fetch(format, stream) =>
+					self.data.handle_fetch_paused(format, stream, Duration::ZERO).await?,
+				Event::Listen(Some(overrid), mut stream) => if let Some(overrid) = self.data.curr_session().overrides.get(&overrid) {
+					self.timer.add_stream(stream.into_blocking(), Some(overrid.clone()));
+				} else {
+					stream.write(&[0]).await?;
+				}
+				Event::Listen(_, stream) => self.timer.add_stream(stream.into_blocking(), None),
+				_ => unreachable!(),
+			}
+		}
+
 		Ok(())
 	}
 
@@ -224,6 +246,14 @@ impl AppData {
 	fn initial_state(&self) -> State {
 		if self.config.iterations != Some(0) && !self.config.sessions.is_empty() {
 			self.new_state()
+		} else {
+			State::Finished
+		}
+	}
+
+	fn initial_jump(&mut self, idx: usize) -> State {
+		if self.config.iterations != Some(0) {
+			self.jump_session(idx)
 		} else {
 			State::Finished
 		}
