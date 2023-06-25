@@ -55,12 +55,7 @@ impl App {
 				Event::Command(Command::Reload(_)) => self.data.read_conf::<true>()?,
 				Event::Fetch(format, stream) =>
 					self.data.handle_fetch_paused(format, stream, Duration::ZERO).await?,
-				Event::Listen(Some(overrid), mut stream) => if let Some(overrid) = self.data.curr_session().overrides.get(&overrid) {
-					self.timer.add_stream(stream.into_blocking(), Some(overrid.clone()));
-				} else {
-					stream.write(&[0]).await?;
-				}
-				Event::Listen(_, stream) => self.timer.add_stream(stream.into_blocking(), None),
+				Event::Listen(overrid, stream) => self.timer.add_stream(stream.into_blocking(), overrid),
 				_ => unreachable!(),
 			}
 		}
@@ -90,16 +85,8 @@ impl App {
 			}
 			Event::Fetch(format, stream) =>
 				self.data.handle_fetch_resumed(format, stream, dest).await?,
-			Event::Listen(Some(overrid), mut stream) => {
-				if let Some(overrid) = session.overrides.get(&overrid) {
-					self.timer.add_stream(stream.into_blocking(), Some(overrid.clone()));
-				} else {
-					stream.write(&[0]).await?;
-				}
-				self.state = State::Resumed(Instant::now(), dest);
-			}
-			Event::Listen(_, stream) => {
-				self.timer.add_stream(stream.into_blocking(), None);
+			Event::Listen(overrid, stream) => {
+				self.timer.add_stream(stream.into_blocking(), overrid);
 				self.state = State::Resumed(Instant::now(), dest);
 			}
 			_ => unreachable!(),
@@ -133,12 +120,8 @@ impl App {
 			Event::Command(Command::Reload(_)) => self.data.read_conf::<true>()?,
 			Event::Fetch(format, stream) =>
 				self.data.handle_fetch_paused(format, stream, duration + DELTA).await?,
-			Event::Listen(Some(overrid), mut stream) => if let Some(overrid) = session.overrides.get(&overrid) {
-				self.timer.add_stream(stream.into_blocking(), Some(overrid.clone()));
-			} else {
-				stream.write(&[0]).await?;
-			}
-			Event::Listen(_, stream) => self.timer.add_stream(stream.into_blocking(), None),
+			Event::Listen(overrid, stream) =>
+				self.timer.add_stream(stream.into_blocking(), overrid),
 			_ => unreachable!(),
 		}
 		Ok(())

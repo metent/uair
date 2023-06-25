@@ -4,12 +4,12 @@ use std::time::{Duration, Instant};
 use async_io::Timer;
 use crate::Error;
 use crate::app::Event;
-use crate::session::{Session, Overridables};
+use crate::session::Session;
 use crate::socket::BlockingStream;
 
 pub struct UairTimer {
 	interval: Duration,
-	streams: Vec<(BlockingStream, Option<Overridables>)>,
+	streams: Vec<(BlockingStream, Option<String>)>,
 	stdout: Stdout,
 	buf: String,
 }
@@ -39,7 +39,8 @@ impl UairTimer {
 		self.stdout.flush()?;
 		self.buf.clear();
 		self.streams.retain_mut(|(stream, overrid)| {
-			if write!(self.buf, "{}\0", session.display::<R>(duration, overrid.as_ref())).is_err() {
+			let overrid = overrid.as_ref().and_then(|o| session.overrides.get(o));
+			if write!(self.buf, "{}\0", session.display::<R>(duration, overrid)).is_err() {
 				self.buf += "Formatting Error";
 			}
 			let res = stream.write(self.buf.as_bytes()).is_ok();
@@ -49,7 +50,7 @@ impl UairTimer {
 		Ok(())
 	}
 
-	pub fn add_stream(&mut self, stream: BlockingStream, overrid: Option<Overridables>) {
+	pub fn add_stream(&mut self, stream: BlockingStream, overrid: Option<String>) {
 		self.streams.push((stream, overrid));
 	}
 }
