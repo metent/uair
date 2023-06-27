@@ -12,11 +12,18 @@ pub struct UairTimer {
 	streams: Vec<(BlockingStream, Option<String>)>,
 	stdout: Stdout,
 	buf: String,
+	pub state: State,
 }
 
 impl UairTimer {
 	pub fn new(interval: Duration) -> Self {
-		UairTimer { stdout: io::stdout(), interval, streams: Vec::new(), buf: "".into() }
+		UairTimer {
+			stdout: io::stdout(),
+			interval,
+			streams: Vec::new(),
+			buf: "".into(),
+			state: State::Paused(Duration::ZERO),
+		}
 	}
 
 	pub async fn start(&mut self, session: &Session, start: Instant, dest: Instant) -> Result<Event, Error> {
@@ -53,4 +60,18 @@ impl UairTimer {
 	pub fn add_stream(&mut self, stream: BlockingStream, overrid: Option<String>) {
 		self.streams.push((stream, overrid));
 	}
+}
+
+impl Drop for UairTimer {
+	fn drop(&mut self) {
+		if let State::Resumed(_, dest) = self.state {
+			self.state = State::Resumed(Instant::now(), dest)
+		}
+	}
+}
+
+pub enum State {
+	Paused(Duration),
+	Resumed(Instant, Instant),
+	Finished,
 }

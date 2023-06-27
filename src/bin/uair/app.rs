@@ -7,11 +7,10 @@ use crate::{Args, Error};
 use crate::config::{Config, ConfigBuilder};
 use crate::socket::{Listener, Stream};
 use crate::session::{Session, SessionId, Token};
-use crate::timer::UairTimer;
+use crate::timer::{State, UairTimer};
 
 pub struct App {
 	data: AppData,
-	state: State,
 	timer: UairTimer,
 }
 
@@ -20,7 +19,6 @@ impl App {
 		let data = AppData::new(args)?;
 		Ok(App {
 			data,
-			state: State::Paused(Duration::ZERO),
 			timer: UairTimer::new(Duration::from_secs(1)),
 		})
 	}
@@ -28,7 +26,7 @@ impl App {
 	pub async fn run(mut self) -> Result<(), Error> {
 		self.start_up().await?;
 		loop {
-			match self.state {
+			match self.timer.state {
 				State::Paused(duration) => self.pause_session(duration).await?,
 				State::Resumed(start, dest) => self.run_session(start, dest).await?,
 				State::Finished => break,
@@ -47,15 +45,19 @@ impl App {
 		loop {
 			match self.data.handle_commands::<false>().await? {
 				Event::Finished | Event::Command(Command::Resume(_) | Command::Next(_)) => {
-					self.state = self.data.initial_state();
+					self.timer.state = self.data.initial_state();
 					break;
 				}
 				Event::Command(Command::Prev(_)) => {},
-				Event::Jump(idx) => { self.state = self.data.initial_jump(idx); break; }
+				Event::Jump(idx) => {
+					self.timer.state = self.data.initial_jump(idx);
+					break;
+				}
 				Event::Command(Command::Reload(_)) => self.data.read_conf::<true>()?,
 				Event::Fetch(format, stream) =>
 					self.data.handle_fetch_paused(format, stream, Duration::ZERO).await?,
-				Event::Listen(overrid, stream) => self.timer.add_stream(stream.into_blocking(), overrid),
+				Event::Listen(overrid, stream) =>
+					self.timer.add_stream(stream.into_blocking(), overrid),
 				_ => unreachable!(),
 			}
 		}
@@ -64,31 +66,29 @@ impl App {
 	}
 
 	async fn run_session(&mut self, start: Instant, dest: Instant) -> Result<(), Error> {
-		let session = &self.data.curr_session();
-
-		match self.timer.start(session, start, dest).or(self.data.handle_commands::<true>()).await? {
+		match self.timer.start(self.data.curr_session(), start, dest)
+			.or(self.data.handle_commands::<true>()).await? {
 			Event::Finished => {
-				session.run_command()?;
-				if self.data.sid.is_last() {
-					self.state = State::Finished;
+				self.timer.state = if self.data.sid.is_last() {
+					State::Finished
 				} else {
-					self.state = self.data.next_session();
-				}
+					self.data.next_session()
+				};
+				self.data.curr_session().run_command()?;
 			}
-			Event::Command(Command::Pause(_)) => self.state = State::Paused(dest - Instant::now()),
-			Event::Command(Command::Next(_)) => self.state = self.data.next_session(),
-			Event::Command(Command::Prev(_)) => self.state = self.data.prev_session(),
-			Event::Jump(idx) => self.state = self.data.jump_session(idx),
-			Event::Command(Command::Reload(_)) => {
-				self.data.read_conf::<true>()?;
-				self.state = State::Resumed(Instant::now(), dest);
-			}
+			Event::Command(Command::Pause(_)) =>
+				self.timer.state = State::Paused(dest - Instant::now()),
+			Event::Command(Command::Next(_)) =>
+				self.timer.state = self.data.next_session(),
+			Event::Command(Command::Prev(_)) =>
+				self.timer.state = self.data.prev_session(),
+			Event::Jump(idx) =>
+				self.timer.state = self.data.jump_session(idx),
+			Event::Command(Command::Reload(_)) => self.data.read_conf::<true>()?,
 			Event::Fetch(format, stream) =>
 				self.data.handle_fetch_resumed(format, stream, dest).await?,
-			Event::Listen(overrid, stream) => {
-				self.timer.add_stream(stream.into_blocking(), overrid);
-				self.state = State::Resumed(Instant::now(), dest);
-			}
+			Event::Listen(overrid, stream) =>
+				self.timer.add_stream(stream.into_blocking(), overrid),
 			_ => unreachable!(),
 		}
 		Ok(())
@@ -96,27 +96,28 @@ impl App {
 
 	async fn pause_session(&mut self, duration: Duration) -> Result<(), Error> {
 		const DELTA: Duration = Duration::from_nanos(1_000_000_000 - 1);
-		let session = self.data.curr_session();
 
-		self.timer.write::<false>(session, duration + DELTA)?;
+		self.timer.write::<false>(self.data.curr_session(), duration + DELTA)?;
 
 		match self.data.handle_commands::<false>().await? {
 			Event::Finished => {
-				session.run_command()?;
-				if self.data.sid.is_last() {
-					self.state = State::Finished;
+				self.timer.state = if self.data.sid.is_last() {
+					State::Finished
 				} else {
-					self.state = self.data.next_session();
-				}
+					self.data.next_session()
+				};
+				self.data.curr_session().run_command()?;
 			}
 			Event::Command(Command::Resume(_)) => {
-				self.timer.write::<true>(session, duration + DELTA)?;
 				let start = Instant::now();
-				self.state = State::Resumed(start, start + duration);
+				self.timer.state = State::Resumed(start, start + duration);
+				self.timer.write::<true>(self.data.curr_session(), duration + DELTA)?;
 			}
-			Event::Command(Command::Next(_)) => self.state = self.data.next_session(),
-			Event::Command(Command::Prev(_)) => self.state = self.data.prev_session(),
-			Event::Jump(idx) => self.state = self.data.jump_session(idx),
+			Event::Command(Command::Next(_)) =>
+				self.timer.state = self.data.next_session(),
+			Event::Command(Command::Prev(_)) =>
+				self.timer.state = self.data.prev_session(),
+			Event::Jump(idx) => self.timer.state = self.data.jump_session(idx),
 			Event::Command(Command::Reload(_)) => self.data.read_conf::<true>()?,
 			Event::Fetch(format, stream) =>
 				self.data.handle_fetch_paused(format, stream, duration + DELTA).await?,
@@ -270,12 +271,6 @@ impl AppData {
 			State::Paused(session.duration)
 		}
 	}
-}
-
-enum State {
-	Paused(Duration),
-	Resumed(Instant, Instant),
-	Finished,
 }
 
 #[cfg(test)]
