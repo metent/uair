@@ -18,7 +18,7 @@ impl UairTimer {
 		UairTimer {
 			interval,
 			writer: Writer::new(),
-			state: State::Paused(Duration::ZERO),
+			state: State::PreInit,
 		}
 	}
 
@@ -78,6 +78,7 @@ impl Writer {
 }
 
 pub enum State {
+	PreInit,
 	Paused(Duration),
 	Resumed(Instant, Instant),
 	Finished,

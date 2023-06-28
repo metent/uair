@@ -4,25 +4,31 @@ mod socket;
 mod session;
 mod timer;
 
-use std::env;
-use std::fmt;
-use std::io;
+use std::{env, io};
 use uair::get_socket_path;
 use argh::FromArgs;
 use futures_lite::{FutureExt, StreamExt};
+use log::error;
 use signal_hook::consts::signal::*;
 use signal_hook_async_std::Signals;
 use crate::app::App;
 
 fn main() {
 	let args: Args = argh::from_env();
+	let enable_stderr = args.log != "-";
+
 	let app = match App::new(args) {
 		Ok(app) => app,
-		Err(err) => { eprintln!("{}", err); return }
+		Err(err) => {
+			error!("{}", err);
+			if enable_stderr { eprintln!("{}", err) }
+			return
+		}
 	};
 
 	if let Err(err) = async_io::block_on(app.run().or(catch_term_signals())) {
-		eprintln!("{}", err);
+		error!("{}", err);
+		if enable_stderr { eprintln!("{}", err) }
 	}
 }
 
@@ -36,6 +42,10 @@ pub struct Args {
 	/// specifies a socket file.
 	#[argh(option, short = 's', default = "get_socket_path()")]
 	socket: String,
+
+	/// specifies a log file.
+	#[argh(option, short = 'l', default = "\"-\".into()")]
+	log: String,
 }
 
 fn get_config_path() -> String {
@@ -56,12 +66,12 @@ async fn catch_term_signals() -> Result<(), Error> {
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
+	#[error("Log Error: {0}")]
+	LogError(#[from] log::SetLoggerError),
 	#[error("IO Error: {0}")]
 	IoError(#[from] io::Error),
 	#[error("Config Error: {0}")]
 	ConfError(#[from] toml::de::Error),
 	#[error("Deserialization Error: {0}")]
 	DeserError(#[from] bincode::Error),
-	#[error("Formatting Error: {0}")]
-	FmtError(#[from] fmt::Error),
 }

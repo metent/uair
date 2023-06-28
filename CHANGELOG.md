@@ -8,6 +8,7 @@
 - New `uair` config session propery: `id`. Allows to uniquely identify each session.
 - New `uairctl` subcommand: `jump`. Allows to directly jump to a session with a given id.
 - New `uairctl` subcommand: `reload`. Allows to reload the config file.
+- New `uair` flag: `-l` or `--log`. Specifies the path for a log file.
 
 #### Removed
 

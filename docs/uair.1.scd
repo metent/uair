@@ -16,6 +16,9 @@ uair - An extensible pomodoro timer
 *-s, --socket*
 	Specifies a socket file.
 
+*-l, --log*
+	Specifies a log file. (use "-" for stdout, which is the default option)
+
 *--help*
 	Show help message and quit.
 

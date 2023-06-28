@@ -1,8 +1,10 @@
 use std::io::{self, Write, Error as IoError, ErrorKind};
-use std::fs;
+use std::fs::{self, File};
 use std::time::{Duration, Instant};
 use uair::{Command, FetchArgs, ListenArgs, PauseArgs, ResumeArgs, JumpArgs};
+use log::{LevelFilter, error};
 use futures_lite::FutureExt;
+use simplelog::{ColorChoice, Config as LogConfig, TermLogger, TerminalMode, WriteLogger};
 use crate::{Args, Error};
 use crate::config::{Config, ConfigBuilder};
 use crate::socket::{Listener, Stream};
@@ -16,6 +18,20 @@ pub struct App {
 
 impl App {
 	pub fn new(args: Args) -> Result<Self, Error> {
+		if args.log == "-" {
+			TermLogger::init(
+				LevelFilter::Info,
+				LogConfig::default(),
+				TerminalMode::Stderr,
+				ColorChoice::Auto
+			)?;
+		} else {
+			WriteLogger::init(
+				LevelFilter::Info,
+				LogConfig::default(),
+				File::create(&args.log)?
+			)?;
+		}
 		let data = AppData::new(args)?;
 		Ok(App {
 			data,
@@ -24,42 +40,46 @@ impl App {
 	}
 
 	pub async fn run(mut self) -> Result<(), Error> {
-		self.start_up().await?;
+		let mut stdout = io::stdout();
+		write!(stdout, "{}", self.data.config.startup_text)?;
+		stdout.flush()?;
+
 		loop {
-			match self.timer.state {
-				State::Paused(duration) => self.pause_session(duration).await?,
-				State::Resumed(start, dest) => self.run_session(start, dest).await?,
+			match match self.timer.state {
+				State::PreInit => self.start_up().await,
+				State::Paused(duration) => self.pause_session(duration).await,
+				State::Resumed(start, dest) => self.run_session(start, dest).await,
 				State::Finished => break,
+			} {
+				Err(Error::ConfError(err)) => error!("{}", err),
+				Err(Error::DeserError(err)) => error!("{}", err),
+				Err(err) => return Err(err),
+				_ => {},
 			}
 		}
 		Ok(())
 	}
 
 	async fn start_up(&mut self) -> Result<(), Error> {
-		let mut stdout = io::stdout();
-		write!(stdout, "{}", self.data.config.startup_text)?;
-		stdout.flush()?;
+		if !self.data.config.pause_at_start {
+			self.timer.state = self.data.initial_state();
+			return Ok(());
+		}
 
-		if !self.data.config.pause_at_start { return Ok(()); }
-
-		loop {
-			match self.data.handle_commands::<false>().await? {
-				Event::Finished | Event::Command(Command::Resume(_) | Command::Next(_)) => {
-					self.timer.state = self.data.initial_state();
-					break;
-				}
-				Event::Command(Command::Prev(_)) => {},
-				Event::Jump(idx) => {
-					self.timer.state = self.data.initial_jump(idx);
-					break;
-				}
-				Event::Command(Command::Reload(_)) => self.data.read_conf::<true>()?,
-				Event::Fetch(format, stream) =>
-					self.data.handle_fetch_paused(format, stream, Duration::ZERO).await?,
-				Event::Listen(overrid, stream) =>
-					self.timer.writer.add_stream(stream.into_blocking(), overrid),
-				_ => unreachable!(),
+		match self.data.handle_commands::<false>().await? {
+			Event::Finished | Event::Command(Command::Resume(_) | Command::Next(_)) => {
+				self.timer.state = self.data.initial_state();
 			}
+			Event::Command(Command::Prev(_)) => {},
+			Event::Jump(idx) => {
+				self.timer.state = self.data.initial_jump(idx);
+			}
+			Event::Command(Command::Reload(_)) => self.data.read_conf::<true>()?,
+			Event::Fetch(format, stream) =>
+				self.data.handle_fetch_paused(format, stream, Duration::ZERO).await?,
+			Event::Listen(overrid, stream) =>
+				self.timer.writer.add_stream(stream.into_blocking(), overrid),
+			_ => unreachable!(),
 		}
 
 		Ok(())
@@ -282,6 +302,7 @@ mod tests {
 		let result = App::new(Args {
 			config: "~/.config/uair/no_uair.toml".into(),
 			socket: "/tmp/uair.sock".into(),
+			log: "-".into(),
 		});
 		assert_eq!(
 			result.err().unwrap().to_string(),
