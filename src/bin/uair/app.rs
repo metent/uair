@@ -89,12 +89,13 @@ impl App {
 		match self.timer.start(self.data.curr_session(), start, dest)
 			.or(self.data.handle_commands::<true>()).await? {
 			Event::Finished => {
+				let res = self.data.curr_session().run_command();
 				self.timer.state = if self.data.sid.is_last() {
 					State::Finished
 				} else {
 					self.data.next_session()
 				};
-				self.data.curr_session().run_command()?;
+				res?;
 			}
 			Event::Command(Command::Pause(_)) =>
 				self.timer.state = State::Paused(dest - Instant::now()),
@@ -121,12 +122,13 @@ impl App {
 
 		match self.data.handle_commands::<false>().await? {
 			Event::Finished => {
+				let res = self.data.curr_session().run_command();
 				self.timer.state = if self.data.sid.is_last() {
 					State::Finished
 				} else {
 					self.data.next_session()
 				};
-				self.data.curr_session().run_command()?;
+				res?;
 			}
 			Event::Command(Command::Resume(_)) => {
 				let start = Instant::now();
