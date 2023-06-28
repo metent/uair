@@ -9,35 +9,49 @@ use crate::socket::BlockingStream;
 
 pub struct UairTimer {
 	interval: Duration,
-	streams: Vec<(BlockingStream, Option<String>)>,
-	stdout: Option<Stdout>,
-	buf: String,
+	pub writer: Writer,
 	pub state: State,
 }
 
 impl UairTimer {
 	pub fn new(interval: Duration) -> Self {
 		UairTimer {
-			stdout: Some(io::stdout()),
 			interval,
-			streams: Vec::new(),
-			buf: "".into(),
+			writer: Writer::new(),
 			state: State::Paused(Duration::ZERO),
 		}
 	}
 
 	pub async fn start(&mut self, session: &Session, start: Instant, dest: Instant) -> Result<Event, Error> {
+		let _guard = StateGuard(&mut self.state);
+
 		let duration = dest - start;
 		let first_interval = Duration::from_nanos(duration.subsec_nanos().into());
 		let mut end = start + first_interval;
 
 		while end <= dest {
 			Timer::at(end).await;
-			self.write::<true>(session, dest - end)?;
+			self.writer.write::<true>(session, dest - end)?;
 			end += self.interval;
 		}
 
 		Ok(Event::Finished)
+	}
+}
+
+pub struct Writer {
+	streams: Vec<(BlockingStream, Option<String>)>,
+	stdout: Option<Stdout>,
+	buf: String,
+}
+
+impl Writer {
+	fn new() -> Self {
+		Writer {
+			streams: Vec::new(),
+			stdout: Some(io::stdout()),
+			buf: "".into(),
+		}
 	}
 
 	pub fn write<const R: bool>(&mut self, session: &Session, duration: Duration) -> Result<(), Error> {
@@ -63,16 +77,18 @@ impl UairTimer {
 	}
 }
 
-impl Drop for UairTimer {
-	fn drop(&mut self) {
-		if let State::Resumed(_, dest) = self.state {
-			self.state = State::Resumed(Instant::now(), dest)
-		}
-	}
-}
-
 pub enum State {
 	Paused(Duration),
 	Resumed(Instant, Instant),
 	Finished,
+}
+
+struct StateGuard<'s>(&'s mut State);
+
+impl<'s> Drop for StateGuard<'s> {
+	fn drop(&mut self) {
+		if let State::Resumed(_, dest) = self.0 {
+			*self.0 = State::Resumed(Instant::now(), *dest);
+		}
+	}
 }

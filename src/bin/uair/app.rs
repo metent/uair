@@ -57,7 +57,7 @@ impl App {
 				Event::Fetch(format, stream) =>
 					self.data.handle_fetch_paused(format, stream, Duration::ZERO).await?,
 				Event::Listen(overrid, stream) =>
-					self.timer.add_stream(stream.into_blocking(), overrid),
+					self.timer.writer.add_stream(stream.into_blocking(), overrid),
 				_ => unreachable!(),
 			}
 		}
@@ -88,7 +88,7 @@ impl App {
 			Event::Fetch(format, stream) =>
 				self.data.handle_fetch_resumed(format, stream, dest).await?,
 			Event::Listen(overrid, stream) =>
-				self.timer.add_stream(stream.into_blocking(), overrid),
+				self.timer.writer.add_stream(stream.into_blocking(), overrid),
 			_ => unreachable!(),
 		}
 		Ok(())
@@ -97,7 +97,7 @@ impl App {
 	async fn pause_session(&mut self, duration: Duration) -> Result<(), Error> {
 		const DELTA: Duration = Duration::from_nanos(1_000_000_000 - 1);
 
-		self.timer.write::<false>(self.data.curr_session(), duration + DELTA)?;
+		self.timer.writer.write::<false>(self.data.curr_session(), duration + DELTA)?;
 
 		match self.data.handle_commands::<false>().await? {
 			Event::Finished => {
@@ -111,7 +111,7 @@ impl App {
 			Event::Command(Command::Resume(_)) => {
 				let start = Instant::now();
 				self.timer.state = State::Resumed(start, start + duration);
-				self.timer.write::<true>(self.data.curr_session(), duration + DELTA)?;
+				self.timer.writer.write::<true>(self.data.curr_session(), duration + DELTA)?;
 			}
 			Event::Command(Command::Next(_)) =>
 				self.timer.state = self.data.next_session(),
@@ -122,7 +122,7 @@ impl App {
 			Event::Fetch(format, stream) =>
 				self.data.handle_fetch_paused(format, stream, duration + DELTA).await?,
 			Event::Listen(overrid, stream) =>
-				self.timer.add_stream(stream.into_blocking(), overrid),
+				self.timer.writer.add_stream(stream.into_blocking(), overrid),
 			_ => unreachable!(),
 		}
 		Ok(())
