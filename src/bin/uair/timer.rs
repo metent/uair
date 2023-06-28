@@ -10,7 +10,7 @@ use crate::socket::BlockingStream;
 pub struct UairTimer {
 	interval: Duration,
 	streams: Vec<(BlockingStream, Option<String>)>,
-	stdout: Stdout,
+	stdout: Option<Stdout>,
 	buf: String,
 	pub state: State,
 }
@@ -18,7 +18,7 @@ pub struct UairTimer {
 impl UairTimer {
 	pub fn new(interval: Duration) -> Self {
 		UairTimer {
-			stdout: io::stdout(),
+			stdout: Some(io::stdout()),
 			interval,
 			streams: Vec::new(),
 			buf: "".into(),
@@ -41,15 +41,16 @@ impl UairTimer {
 	}
 
 	pub fn write<const R: bool>(&mut self, session: &Session, duration: Duration) -> Result<(), Error> {
-		write!(self.buf, "{}", session.display::<R>(duration, None))?;
-		write!(self.stdout, "{}", self.buf)?;
-		self.stdout.flush()?;
-		self.buf.clear();
+		if let Some(stdout) = &mut self.stdout {
+			_ = write!(self.buf, "{}", session.display::<R>(duration, None));
+			if write!(stdout, "{}", self.buf).and_then(|_| stdout.flush()).is_err() {
+				self.stdout = None;
+			}
+			self.buf.clear();
+		}
 		self.streams.retain_mut(|(stream, overrid)| {
 			let overrid = overrid.as_ref().and_then(|o| session.overrides.get(o));
-			if write!(self.buf, "{}\0", session.display::<R>(duration, overrid)).is_err() {
-				self.buf += "Formatting Error";
-			}
+			_ = write!(self.buf, "{}\0", session.display::<R>(duration, overrid));
 			let res = stream.write(self.buf.as_bytes()).is_ok();
 			self.buf.clear();
 			res
