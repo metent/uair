@@ -14,10 +14,10 @@ pub struct UairTimer {
 }
 
 impl UairTimer {
-	pub fn new(interval: Duration) -> Self {
+	pub fn new(interval: Duration, quiet: bool) -> Self {
 		UairTimer {
 			interval,
-			writer: Writer::new(),
+			writer: Writer::new(quiet),
 			state: State::PreInit,
 		}
 	}
@@ -46,10 +46,10 @@ pub struct Writer {
 }
 
 impl Writer {
-	fn new() -> Self {
+	fn new(quiet: bool) -> Self {
 		Writer {
 			streams: Vec::new(),
-			stdout: Some(io::stdout()),
+			stdout: (!quiet).then(io::stdout),
 			buf: "".into(),
 		}
 	}

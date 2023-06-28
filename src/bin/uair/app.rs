@@ -32,11 +32,9 @@ impl App {
 				File::create(&args.log)?
 			)?;
 		}
+		let timer = UairTimer::new(Duration::from_secs(1), args.quiet);
 		let data = AppData::new(args)?;
-		Ok(App {
-			data,
-			timer: UairTimer::new(Duration::from_secs(1)),
-		})
+		Ok(App { data, timer })
 	}
 
 	pub async fn run(mut self) -> Result<(), Error> {
@@ -305,6 +303,8 @@ mod tests {
 			config: "~/.config/uair/no_uair.toml".into(),
 			socket: "/tmp/uair.sock".into(),
 			log: "-".into(),
+			quiet: false,
+			version: false,
 		});
 		assert_eq!(
 			result.err().unwrap().to_string(),

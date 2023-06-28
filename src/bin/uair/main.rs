@@ -4,7 +4,8 @@ mod socket;
 mod session;
 mod timer;
 
-use std::{env, io};
+use std::env;
+use std::io::{self, Write};
 use uair::get_socket_path;
 use argh::FromArgs;
 use futures_lite::{FutureExt, StreamExt};
@@ -15,6 +16,16 @@ use crate::app::App;
 
 fn main() {
 	let args: Args = argh::from_env();
+	if args.version {
+		_ = write!(
+			io::stdout(),
+			"{} version {}\n",
+			env!("CARGO_PKG_NAME"),
+			env!("CARGO_PKG_VERSION"),
+		);
+		return;
+	}
+
 	let enable_stderr = args.log != "-";
 
 	let app = match App::new(args) {
@@ -46,6 +57,14 @@ pub struct Args {
 	/// specifies a log file.
 	#[argh(option, short = 'l', default = "\"-\".into()")]
 	log: String,
+
+	/// run without writing to standard output.
+	#[argh(switch, short = 'q')]
+	quiet: bool,
+
+	/// display version number and then exit.
+	#[argh(switch, short = 'v')]
+	version: bool,
 }
 
 fn get_config_path() -> String {

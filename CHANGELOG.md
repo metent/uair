@@ -9,6 +9,12 @@
 - New `uairctl` subcommand: `jump`. Allows to directly jump to a session with a given id.
 - New `uairctl` subcommand: `reload`. Allows to reload the config file.
 - New `uair` flag: `-l` or `--log`. Specifies the path for a log file.
+- New `uair` flag: `-q` or `--quiet`. Allows to run `uair` without writing to standard output.
+- New `uair` flag: `-v` or `--version`. Displays version number.
+
+#### Deprecated
+
+- `startup_text` key in `uair` config.
 
 #### Removed
 

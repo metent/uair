@@ -18,7 +18,7 @@ The number of pomodoro sessions and their properties can be specified by an uair
 	This is a boolean value (true or false) which controls whether uair is at paused state at startup.
 
 *startup_text*
-	It specifies the text to be printed at startup.
+	It specifies the text to be printed at startup. (Deprecated)
 
 *defaults*
 	This is a table containing default session properties. If a session has a property unspecified, the value of the corresponding key in this table is used instead. Specifying a default id is not allowed.

@@ -19,6 +19,12 @@ uair - An extensible pomodoro timer
 *-l, --log*
 	Specifies a log file. (use "-" for stdout, which is the default option)
 
+*-q, --quiet*
+	Allows to run `uair` without writing to standard output.
+
+*-v, --version*
+	Displays version number then exits.
+
 *--help*
 	Show help message and quit.
 
