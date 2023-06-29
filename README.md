@@ -2,6 +2,8 @@
 
 `uair` is a minimal pomodoro timer for UNIX-like operating systems. Unlike other timers, `uair` simply prints the remaining time to standard output. Other than making the code more maintainable, this design allows `uair` to be very extensible as it can be used in various status bars and even command-line and graphical user interfaces.
 
+![](demo.gif)
+
 ## Features
 
 - Extensible: Can be used in status bars, desktop widgets, CLIs, GUIs, etc.
