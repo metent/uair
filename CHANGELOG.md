@@ -1,3 +1,9 @@
+### v0.6.1
+
+#### Fixed
+
+Fixed version mismatch in Cargo.lock.
+
 ### v0.6.0
 
 #### Added
