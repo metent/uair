@@ -36,6 +36,12 @@ cd uair
 makepkg -si
 ```
 
+### From the official NetBSD repositories
+
+```
+pkgin install uair
+```
+
 ### From crates.io
 
 ```
