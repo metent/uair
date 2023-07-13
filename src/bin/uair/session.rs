@@ -4,7 +4,7 @@ use std::io;
 use std::process;
 use std::time::Duration;
 use humantime::format_duration;
-use winnow::{IResult, Parser};
+use winnow::{PResult, Parser};
 use winnow::combinator::alt;
 use winnow::combinator::{opt, peek, repeat, rest};
 use winnow::combinator::preceded;
@@ -210,13 +210,13 @@ pub enum TimeFormatToken {
 }
 
 impl TimeFormatToken {
-	pub fn parse(format: &str) -> Vec<TimeFormatToken> {
-		let res: IResult<&str, Vec<TimeFormatToken>> = repeat(0.., alt((
-			preceded("%", (opt(one_of("*")), opt(one_of("-_0")), opt(any)).map(Self::identify)),
+	pub fn parse(mut format: &str) -> Vec<TimeFormatToken> {
+		let res: PResult<Vec<TimeFormatToken>> = repeat(0.., alt((
+			preceded("%", (opt(one_of('*')), opt(one_of(['-', '_', '0'])), opt(any)).map(Self::identify)),
 			take_until0("%").map(|s: &str| TimeFormatToken::Literal(s.into())),
 			(peek(any), rest).map(|(_, s): (char, &str)| TimeFormatToken::Literal(s.into())),
-		))).parse_next(format);
-		res.unwrap().1
+		))).parse_next(&mut format);
+		res.unwrap()
 	}
 
 	fn identify((star, flag, spec): (Option<char>, Option<char>, Option<char>)) -> TimeFormatToken {
