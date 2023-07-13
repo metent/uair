@@ -5,10 +5,10 @@ use std::process;
 use std::time::Duration;
 use humantime::format_duration;
 use winnow::{IResult, Parser};
-use winnow::branch::alt;
-use winnow::bytes::{any, one_of, take_until0};
+use winnow::combinator::alt;
 use winnow::combinator::{opt, peek, repeat, rest};
-use winnow::sequence::preceded;
+use winnow::combinator::preceded;
+use winnow::token::{any, one_of, take_until0};
 
 pub struct Session {
 	pub id: String,
