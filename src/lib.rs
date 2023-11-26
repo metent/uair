@@ -77,6 +77,9 @@ pub struct ListenArgs {
 	/// override to apply
 	#[argh(option, short = 'o', long = "override")]
 	pub overrid: Option<String>,
+	/// output time and exit listening instance immediately
+	#[argh(switch, short = 'e')]
+	pub exit: bool,
 }
 
 pub fn get_socket_path() -> String {

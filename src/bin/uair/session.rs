@@ -4,10 +4,8 @@ use std::io;
 use std::process;
 use std::time::Duration;
 use humantime::format_duration;
-use winnow::{PResult, Parser};
-use winnow::combinator::alt;
-use winnow::combinator::{opt, peek, repeat, rest};
-use winnow::combinator::preceded;
+use winnow::{Parser, PResult};
+use winnow::combinator::{alt, opt, peek, preceded, repeat, rest};
 use winnow::token::{any, one_of, take_until0};
 
 pub struct Session {
@@ -34,20 +32,6 @@ impl Session {
 		}
 	}
 
-	pub fn display_with_format<'s, const R: bool>(
-		&'s self,
-		time: Duration,
-		format: &'s [Token]
-	) -> DisplayableSession<'s, R> {
-		DisplayableSession {
-			session: self,
-			time: DisplayableTime { time, format: &self.time_format },
-			format,
-			pst_override: None,
-			rst_override: None,
-		}
-	}
-
 	pub fn run_command(&self) -> io::Result<()> {
 		if !self.command.is_empty() {
 			let duration = humantime::format_duration(self.duration).to_string();
@@ -62,12 +46,22 @@ impl Session {
 	}
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Overridables {
 	pub format: Option<Vec<Token>>,
 	pub time_format: Option<Vec<TimeFormatToken>>,
 	pub paused_state_text: Option<String>,
 	pub resumed_state_text: Option<String>,
+}
+
+impl Overridables {
+	pub fn new() -> Self {
+		Overridables::default()
+	}
+
+	pub fn format(self, format: &str) -> Self {
+		Overridables { format: Some(Token::parse(format)), ..self }
+	}
 }
 
 pub struct DisplayableSession<'s, const R: bool> {

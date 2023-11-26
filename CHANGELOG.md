@@ -1,3 +1,9 @@
+### Unreleased
+
+### Added
+
+- New `uairctl` flag for `listen` subcommand: `-e` or `--exit`. Allows to output remaining time and exit the listening instance immediately.
+
 ### v0.6.1
 
 #### Fixed

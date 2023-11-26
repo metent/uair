@@ -8,7 +8,7 @@ use simplelog::{ColorChoice, Config as LogConfig, TermLogger, TerminalMode, Writ
 use crate::{Args, Error};
 use crate::config::{Config, ConfigBuilder};
 use crate::socket::{Listener, Stream};
-use crate::session::{Session, SessionId, Token};
+use crate::session::{Overridables, Session, SessionId};
 use crate::timer::{State, UairTimer};
 
 pub struct App {
@@ -74,9 +74,19 @@ impl App {
 			}
 			Event::Command(Command::Reload(_)) => self.data.read_conf::<true>()?,
 			Event::Fetch(format, stream) =>
-				self.data.handle_fetch_paused(format, stream, Duration::ZERO).await?,
+				self.data.handle_fetch_paused(
+					Some(&Overridables::new().format(&format)),
+					stream,
+					Duration::ZERO
+				).await?,
 			Event::Listen(overrid, stream) =>
 				self.timer.writer.add_stream(stream.into_blocking(), overrid),
+			Event::ListenExit(overrid, stream) =>
+				self.data.handle_fetch_paused(
+					overrid.and_then(|o| self.data.curr_session().overrides.get(&o)),
+					stream,
+					Duration::ZERO
+				).await?,
 			_ => unreachable!(),
 		}
 
@@ -105,9 +115,19 @@ impl App {
 				self.timer.state = self.data.jump_session(idx),
 			Event::Command(Command::Reload(_)) => self.data.read_conf::<true>()?,
 			Event::Fetch(format, stream) =>
-				self.data.handle_fetch_resumed(format, stream, dest).await?,
+				self.data.handle_fetch_resumed(
+					Some(&Overridables::new().format(&format)),
+					stream,
+					dest
+				).await?,
 			Event::Listen(overrid, stream) =>
 				self.timer.writer.add_stream(stream.into_blocking(), overrid),
+			Event::ListenExit(overrid, stream) =>
+				self.data.handle_fetch_resumed(
+					overrid.and_then(|o| self.data.curr_session().overrides.get(&o)),
+					stream,
+					dest
+				).await?,
 			_ => unreachable!(),
 		}
 		Ok(())
@@ -140,9 +160,19 @@ impl App {
 			Event::Jump(idx) => self.timer.state = self.data.jump_session(idx),
 			Event::Command(Command::Reload(_)) => self.data.read_conf::<true>()?,
 			Event::Fetch(format, stream) =>
-				self.data.handle_fetch_paused(format, stream, duration + DELTA).await?,
+				self.data.handle_fetch_paused(
+					Some(&Overridables::new().format(&format)),
+					stream,
+					duration + DELTA
+				).await?,
 			Event::Listen(overrid, stream) =>
 				self.timer.writer.add_stream(stream.into_blocking(), overrid),
+			Event::ListenExit(overrid, stream) =>
+				self.data.handle_fetch_paused(
+					overrid.and_then(|o| self.data.curr_session().overrides.get(&o)),
+					stream,
+					duration + DELTA
+				).await?,
 			_ => unreachable!(),
 		}
 		Ok(())
@@ -155,6 +185,7 @@ pub enum Event {
 	Fetch(String, Stream),
 	Finished,
 	Listen(Option<String>, Stream),
+	ListenExit(Option<String>, Stream),
 }
 
 struct AppData {
@@ -224,25 +255,25 @@ impl AppData {
 				Command::Reload(_) => return Ok(Event::Command(command)),
 				Command::Fetch(FetchArgs { format }) =>
 					return Ok(Event::Fetch(format, stream)),
-				Command::Listen(ListenArgs { overrid }) => return Ok(Event::Listen(overrid, stream)),
+				Command::Listen(ListenArgs { overrid, exit }) => return if exit {
+					Ok(Event::ListenExit(overrid, stream))
+				} else {
+					Ok(Event::Listen(overrid, stream))
+				},
 				_ => {}
 			}
 		}
 	}
 
-	async fn handle_fetch_resumed(&self, format: String, mut stream: Stream, dest: Instant) -> Result<(), Error> {
-		let tokens = Token::parse(&format);
-		let session = &self.config.sessions[self.sid.curr()];
+	async fn handle_fetch_resumed(&self, overrides: Option<&Overridables>, mut stream: Stream, dest: Instant) -> Result<(), Error> {
 		let remaining = dest - Instant::now();
-		let displayed = session.display_with_format::<true>(remaining, &tokens);
+		let displayed = self.curr_session().display::<true>(remaining, overrides);
 		stream.write(format!("{}", displayed).as_bytes()).await?;
 		Ok(())
 	}
 
-	async fn handle_fetch_paused(&self, format: String, mut stream: Stream, duration: Duration) -> Result<(), Error> {
-		let tokens = Token::parse(&format);
-		let session = &self.config.sessions[self.sid.curr()];
-		let displayed = session.display_with_format::<false>(duration, &tokens);
+	async fn handle_fetch_paused(&self, overrides: Option<&Overridables>, mut stream: Stream, duration: Duration) -> Result<(), Error> {
+		let displayed = self.curr_session().display::<false>(duration, overrides);
 		stream.write(format!("{}", displayed).as_bytes()).await?;
 		Ok(())
 	}
