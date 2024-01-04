@@ -40,12 +40,6 @@ The number of pomodoro sessions and their properties can be specified by an uair
 *command*
 	Command which is run when the session finishes. See COMMAND ENVIRONMENT section for information on environment variables which are passed to the command.
 
-*before*
-	String which is printed before the remaining time string. (Deprecated)
-
-*after*
-	String which is printed after the remaining time string. (Deprecated)
-
 *format*
 	Specifies the format in which text is printed each second. See FORMAT SPECIFIERS section for details.
 

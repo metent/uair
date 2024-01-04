@@ -4,6 +4,10 @@
 
 - New `uairctl` flag for `listen` subcommand: `-e` or `--exit`. Allows to output remaining time and exit the listening instance immediately.
 
+### Fixed
+
+- `uair` now returns exit code 1 on failure.
+
 ### v0.6.1
 
 #### Fixed

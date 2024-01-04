@@ -6,6 +6,7 @@ mod timer;
 
 use std::env;
 use std::io::{self, Write};
+use std::process::ExitCode;
 use uair::get_socket_path;
 use argh::FromArgs;
 use futures_lite::{FutureExt, StreamExt};
@@ -14,7 +15,7 @@ use signal_hook::consts::signal::*;
 use signal_hook_async_std::Signals;
 use crate::app::App;
 
-fn main() {
+fn main() -> ExitCode {
 	let args: Args = argh::from_env();
 	if args.version {
 		_ = write!(
@@ -23,7 +24,7 @@ fn main() {
 			env!("CARGO_PKG_NAME"),
 			env!("CARGO_PKG_VERSION"),
 		);
-		return;
+		return ExitCode::SUCCESS;
 	}
 
 	let enable_stderr = args.log != "-";
@@ -33,14 +34,19 @@ fn main() {
 		Err(err) => {
 			error!("{}", err);
 			if enable_stderr { eprintln!("{}", err) }
-			return
+			return ExitCode::FAILURE;
 		}
 	};
 
 	if let Err(err) = async_io::block_on(app.run().or(catch_term_signals())) {
 		error!("{}", err);
-		if enable_stderr { eprintln!("{}", err) }
+		if enable_stderr {
+			eprintln!("{}", err);
+			return ExitCode::FAILURE;
+		}
 	}
+
+	return ExitCode::SUCCESS;
 }
 
 #[derive(FromArgs)]
