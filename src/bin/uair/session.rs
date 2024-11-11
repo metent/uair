@@ -6,7 +6,7 @@ use std::time::Duration;
 use humantime::format_duration;
 use winnow::{Parser, PResult};
 use winnow::combinator::{alt, opt, peek, preceded, repeat, rest};
-use winnow::token::{any, one_of, take_until0};
+use winnow::token::{any, one_of, take_until};
 
 pub struct Session {
 	pub id: String,
@@ -207,7 +207,7 @@ impl TimeFormatToken {
 	pub fn parse(mut format: &str) -> Vec<TimeFormatToken> {
 		let res: PResult<Vec<TimeFormatToken>> = repeat(0.., alt((
 			preceded("%", (opt(one_of('*')), opt(one_of(['-', '_', '0'])), opt(any)).map(Self::identify)),
-			take_until0("%").map(|s: &str| TimeFormatToken::Literal(s.into())),
+			take_until(0.., "%").map(|s: &str| TimeFormatToken::Literal(s.into())),
 			(peek(any), rest).map(|(_, s): (char, &str)| TimeFormatToken::Literal(s.into())),
 		))).parse_next(&mut format);
 		res.unwrap()
