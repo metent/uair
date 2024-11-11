@@ -1,4 +1,4 @@
-### Unreleased
+### v0.6.2
 
 ### Added
 
@@ -7,6 +7,7 @@
 ### Fixed
 
 - `uair` now returns exit code 1 on failure.
+- Fixed building with rust version >= 1.8.0.
 
 ### v0.6.1
 
