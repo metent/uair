@@ -16,6 +16,7 @@ pub struct Config {
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ConfigBuilder {
 	#[serde(default)]
 	loop_on_end: bool,
@@ -65,6 +66,7 @@ impl ConfigBuilder {
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Defaults {
 	#[serde(default = "Defaults::name")]
 	name: String,
@@ -134,6 +136,7 @@ impl Default for Defaults {
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct SessionBuilder {
 	id: Option<String>,
 	name: Option<String>,
@@ -210,6 +213,7 @@ impl FromStr for Token {
 }
 
 #[derive(Serialize, Deserialize, Default, Clone)]
+#[serde(deny_unknown_fields)]
 struct OverridablesBuilder {
 	format: Option<String>,
 	time_format: Option<String>,
