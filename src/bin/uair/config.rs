@@ -1,4 +1,5 @@
 use crate::session::{Color, Overridables, Session, TimeFormatToken, Token};
+use log::warn;
 use serde::de::Error as _;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -31,7 +32,10 @@ pub struct ConfigBuilder {
 
 impl ConfigBuilder {
 	pub fn deserialize(conf: &str) -> Result<Self, Error> {
-		toml::from_str(conf)
+		let deserializer = toml::Deserializer::new(conf);
+		serde_ignored::deserialize(deserializer, |path| {
+			warn!("{path} is not a valid config and will be ignored.")
+		})
 	}
 
 	pub fn build(self) -> Result<Config, Error> {
