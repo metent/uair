@@ -19,6 +19,7 @@ humantime = "2.1.0"
 humantime-serde = "1.1.1"
 log = "0.4.22"
 serde = { version = "1.0.214", features = ["derive"] }
+serde_ignored = "0.1.10"
 signal-hook = "0.3.17"
 signal-hook-async-std = "0.2.2"
 simplelog = "0.12.2"
