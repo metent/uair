@@ -164,18 +164,16 @@ impl SessionBuilder {
 		Session {
 			id: self.id.unwrap_or_else(|| idx.to_string()),
 			name: self.name.unwrap_or_else(|| defaults.name.clone()),
-			duration: self.duration.unwrap_or_else(|| defaults.duration.clone()),
+			duration: self.duration.unwrap_or(defaults.duration),
 			command: self.command.unwrap_or_else(|| defaults.command.clone()),
 			format: self
 				.format
 				.map(|f| Token::parse(&f))
 				.unwrap_or_else(|| Token::parse(&defaults.format)),
 			time_format: TimeFormatToken::parse(
-				self.time_format
-					.as_ref()
-					.unwrap_or_else(|| &defaults.time_format),
+				self.time_format.as_ref().unwrap_or(&defaults.time_format),
 			),
-			autostart: self.autostart.unwrap_or_else(|| defaults.autostart.clone()),
+			autostart: self.autostart.unwrap_or(defaults.autostart),
 			paused_state_text: self
 				.paused_state_text
 				.unwrap_or_else(|| defaults.paused_state_text.clone()),

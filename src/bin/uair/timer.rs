@@ -98,7 +98,7 @@ pub enum State {
 
 struct StateGuard<'s>(&'s mut State);
 
-impl<'s> Drop for StateGuard<'s> {
+impl Drop for StateGuard<'_> {
 	fn drop(&mut self) {
 		if let State::Resumed(_, dest) = self.0 {
 			*self.0 = State::Resumed(Instant::now(), *dest);

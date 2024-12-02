@@ -262,7 +262,7 @@ impl AppData {
 			let mut stream = self.listener.listen().await?;
 			buffer.clear();
 			let msg = stream.read(&mut buffer).await?;
-			let command: Command = bincode::deserialize(&msg)?;
+			let command: Command = bincode::deserialize(msg)?;
 			match command {
 				Command::Pause(_) | Command::Toggle(_) if R => {
 					return Ok(Event::Command(Command::Pause(PauseArgs {})))

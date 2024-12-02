@@ -8,7 +8,7 @@ use uair::{get_socket_path, Command, FetchArgs};
 fn main() -> Result<(), Error> {
 	let mut args: Args = argh::from_env();
 	if let Command::Fetch(FetchArgs { format }) = &mut args.command {
-		*format = unescape(&format);
+		*format = unescape(format);
 	}
 
 	let command = bincode::serialize(&args.command)?;
@@ -65,9 +65,7 @@ fn unescape(input: &str) -> String {
 							break 'outer;
 						}
 					}
-					match u32::from_str_radix(&input[i + 1..i + 5], 16)
-						.map(|num| char::from_u32(num))
-					{
+					match u32::from_str_radix(&input[i + 1..i + 5], 16).map(char::from_u32) {
 						Ok(Some(num)) => res.push(num),
 						_ => res.push_str(&input[i - 1..i + 5]),
 					}
@@ -79,9 +77,7 @@ fn unescape(input: &str) -> String {
 							break 'outer;
 						}
 					}
-					match u32::from_str_radix(&input[i + 1..i + 9], 16)
-						.map(|num| char::from_u32(num))
-					{
+					match u32::from_str_radix(&input[i + 1..i + 9], 16).map(char::from_u32) {
 						Ok(Some(num)) => res.push(num),
 						_ => res.push_str(&input[i - 1..i + 9]),
 					}
@@ -111,11 +107,11 @@ struct Args {
 #[derive(thiserror::Error, Debug)]
 enum Error {
 	#[error("Serialization Error: {0}")]
-	SerError(#[from] bincode::Error),
+	Ser(#[from] bincode::Error),
 	#[error("Socket Connection Error: {0}")]
-	IoError(#[from] io::Error),
+	Io(#[from] io::Error),
 	#[error("UTF8 Error: {0}")]
-	Utf8Error(#[from] str::Utf8Error),
+	Utf8(#[from] str::Utf8Error),
 }
 
 #[cfg(test)]

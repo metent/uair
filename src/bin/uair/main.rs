@@ -18,9 +18,9 @@ use uair::get_socket_path;
 fn main() -> ExitCode {
 	let args: Args = argh::from_env();
 	if args.version {
-		_ = write!(
+		_ = writeln!(
 			io::stdout(),
-			"{} version {}\n",
+			"{} version {}",
 			env!("CARGO_PKG_NAME"),
 			env!("CARGO_PKG_VERSION"),
 		);
@@ -48,7 +48,7 @@ fn main() -> ExitCode {
 		}
 	}
 
-	return ExitCode::SUCCESS;
+	ExitCode::SUCCESS
 }
 
 #[derive(FromArgs)]
@@ -86,7 +86,7 @@ fn get_config_path() -> String {
 }
 
 async fn catch_term_signals() -> Result<(), Error> {
-	let mut signals = Signals::new(&[SIGTERM, SIGINT, SIGQUIT])?;
+	let mut signals = Signals::new([SIGTERM, SIGINT, SIGQUIT])?;
 	signals.next().await;
 	Ok(())
 }

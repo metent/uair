@@ -38,8 +38,8 @@ impl Session {
 			format: overrid
 				.and_then(|o| o.format.as_ref())
 				.unwrap_or(&self.format),
-			pst_override: overrid.and_then(|o| o.paused_state_text.as_ref().map(|s| s.as_str())),
-			rst_override: overrid.and_then(|o| o.resumed_state_text.as_ref().map(|s| s.as_str())),
+			pst_override: overrid.and_then(|o| o.paused_state_text.as_deref()),
+			rst_override: overrid.and_then(|o| o.resumed_state_text.as_deref()),
 		}
 	}
 
@@ -86,7 +86,7 @@ pub struct DisplayableSession<'s, const R: bool> {
 	rst_override: Option<&'s str>,
 }
 
-impl<'s, const R: bool> Display for DisplayableSession<'s, R> {
+impl<const R: bool> Display for DisplayableSession<'_, R> {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		for token in self.format {
 			match token {
@@ -109,15 +109,15 @@ impl<'s, const R: bool> Display for DisplayableSession<'s, R> {
 						self.pst_override.unwrap_or(&self.session.paused_state_text)
 					}
 				)?,
-				Token::Color(Color::Black) => write!(f, "{}", "\x1b[0;30m")?,
-				Token::Color(Color::Red) => write!(f, "{}", "\x1b[0;31m")?,
-				Token::Color(Color::Green) => write!(f, "{}", "\x1b[0;32m")?,
-				Token::Color(Color::Yellow) => write!(f, "{}", "\x1b[0;33m")?,
-				Token::Color(Color::Blue) => write!(f, "{}", "\x1b[0;34m")?,
-				Token::Color(Color::Purple) => write!(f, "{}", "\x1b[0;35m")?,
-				Token::Color(Color::Cyan) => write!(f, "{}", "\x1b[0;36m")?,
-				Token::Color(Color::White) => write!(f, "{}", "\x1b[0;37m")?,
-				Token::Color(Color::End) => write!(f, "{}", "\x1b[0m")?,
+				Token::Color(Color::Black) => write!(f, "\x1b[0;30m")?,
+				Token::Color(Color::Red) => write!(f, "\x1b[0;31m")?,
+				Token::Color(Color::Green) => write!(f, "\x1b[0;32m")?,
+				Token::Color(Color::Yellow) => write!(f, "\x1b[0;33m")?,
+				Token::Color(Color::Blue) => write!(f, "\x1b[0;34m")?,
+				Token::Color(Color::Purple) => write!(f, "\x1b[0;35m")?,
+				Token::Color(Color::Cyan) => write!(f, "\x1b[0;36m")?,
+				Token::Color(Color::White) => write!(f, "\x1b[0;37m")?,
+				Token::Color(Color::End) => write!(f, "\x1b[0m")?,
 				Token::Literal(literal) => write!(f, "{}", literal)?,
 			};
 		}
@@ -130,7 +130,7 @@ struct DisplayableTime<'s> {
 	format: &'s [TimeFormatToken],
 }
 
-impl<'s> Display for DisplayableTime<'s> {
+impl Display for DisplayableTime<'_> {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		let secs = self.time.as_secs();
 		let years = secs / 31_557_600;
@@ -203,7 +203,7 @@ impl Token {
 				'{' => open = Some(i),
 				'}' => {
 					if let Some(j) = open {
-						if let Ok(token) = (&format[j..=i]).parse() {
+						if let Ok(token) = format[j..=i].parse() {
 							if k != j {
 								tokens.push(Token::Literal(format[k..j].into()))
 							};

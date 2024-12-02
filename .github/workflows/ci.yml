@@ -21,6 +21,8 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+      - name: Lint
+        run: cargo clippy --all-targets -- -D warnings
       - name: Format
         run: cargo fmt --check
       - name: Test
