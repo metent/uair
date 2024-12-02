@@ -21,6 +21,7 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+      - name: Format
+        run: cargo fmt --check
       - name: Test
-        shell: bash
         run: cargo test

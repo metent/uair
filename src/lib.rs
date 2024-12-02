@@ -1,6 +1,6 @@
-use std::env;
 use argh::FromArgs;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use std::env;
 
 #[derive(FromArgs, Serialize, Deserialize)]
 #[argh(subcommand)]

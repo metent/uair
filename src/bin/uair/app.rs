@@ -1,15 +1,15 @@
-use std::io::{self, Write, Error as IoError, ErrorKind};
-use std::fs::{self, File};
-use std::time::{Duration, Instant};
-use uair::{Command, FetchArgs, ListenArgs, PauseArgs, ResumeArgs, JumpArgs};
-use log::{LevelFilter, error};
-use futures_lite::FutureExt;
-use simplelog::{ColorChoice, Config as LogConfig, TermLogger, TerminalMode, WriteLogger};
-use crate::{Args, Error};
 use crate::config::{Config, ConfigBuilder};
-use crate::socket::{Listener, Stream};
 use crate::session::{Overridables, Session, SessionId};
+use crate::socket::{Listener, Stream};
 use crate::timer::{State, UairTimer};
+use crate::{Args, Error};
+use futures_lite::FutureExt;
+use log::{error, LevelFilter};
+use simplelog::{ColorChoice, Config as LogConfig, TermLogger, TerminalMode, WriteLogger};
+use std::fs::{self, File};
+use std::io::{self, Error as IoError, ErrorKind, Write};
+use std::time::{Duration, Instant};
+use uair::{Command, FetchArgs, JumpArgs, ListenArgs, PauseArgs, ResumeArgs};
 
 pub struct App {
 	data: AppData,
@@ -23,13 +23,13 @@ impl App {
 				LevelFilter::Info,
 				LogConfig::default(),
 				TerminalMode::Stderr,
-				ColorChoice::Auto
+				ColorChoice::Auto,
 			)?;
 		} else {
 			WriteLogger::init(
 				LevelFilter::Info,
 				LogConfig::default(),
-				File::create(&args.log)?
+				File::create(&args.log)?,
 			)?;
 		}
 		let timer = UairTimer::new(Duration::from_secs(1), args.quiet);
@@ -52,7 +52,7 @@ impl App {
 				Err(Error::ConfError(err)) => error!("{}", err),
 				Err(Error::DeserError(err)) => error!("{}", err),
 				Err(err) => return Err(err),
-				_ => {},
+				_ => {}
 			}
 		}
 		Ok(())
@@ -68,25 +68,33 @@ impl App {
 			Event::Finished | Event::Command(Command::Resume(_) | Command::Next(_)) => {
 				self.timer.state = self.data.initial_state();
 			}
-			Event::Command(Command::Prev(_)) => {},
+			Event::Command(Command::Prev(_)) => {}
 			Event::Jump(idx) => {
 				self.timer.state = self.data.initial_jump(idx);
 			}
 			Event::Command(Command::Reload(_)) => self.data.read_conf::<true>()?,
-			Event::Fetch(format, stream) =>
-				self.data.handle_fetch_paused(
-					Some(&Overridables::new().format(&format)),
-					stream,
-					Duration::ZERO
-				).await?,
-			Event::Listen(overrid, stream) =>
-				self.timer.writer.add_stream(stream.into_blocking(), overrid),
-			Event::ListenExit(overrid, stream) =>
-				self.data.handle_fetch_paused(
-					overrid.and_then(|o| self.data.curr_session().overrides.get(&o)),
-					stream,
-					Duration::ZERO
-				).await?,
+			Event::Fetch(format, stream) => {
+				self.data
+					.handle_fetch_paused(
+						Some(&Overridables::new().format(&format)),
+						stream,
+						Duration::ZERO,
+					)
+					.await?
+			}
+			Event::Listen(overrid, stream) => self
+				.timer
+				.writer
+				.add_stream(stream.into_blocking(), overrid),
+			Event::ListenExit(overrid, stream) => {
+				self.data
+					.handle_fetch_paused(
+						overrid.and_then(|o| self.data.curr_session().overrides.get(&o)),
+						stream,
+						Duration::ZERO,
+					)
+					.await?
+			}
 			_ => unreachable!(),
 		}
 
@@ -94,8 +102,12 @@ impl App {
 	}
 
 	async fn run_session(&mut self, start: Instant, dest: Instant) -> Result<(), Error> {
-		match self.timer.start(self.data.curr_session(), start, dest)
-			.or(self.data.handle_commands::<true>()).await? {
+		match self
+			.timer
+			.start(self.data.curr_session(), start, dest)
+			.or(self.data.handle_commands::<true>())
+			.await?
+		{
 			Event::Finished => {
 				let res = self.data.curr_session().run_command();
 				self.timer.state = if self.data.sid.is_last() {
@@ -105,29 +117,31 @@ impl App {
 				};
 				res?;
 			}
-			Event::Command(Command::Pause(_)) =>
-				self.timer.state = State::Paused(dest - Instant::now()),
-			Event::Command(Command::Next(_)) =>
-				self.timer.state = self.data.next_session(),
-			Event::Command(Command::Prev(_)) =>
-				self.timer.state = self.data.prev_session(),
-			Event::Jump(idx) =>
-				self.timer.state = self.data.jump_session(idx),
+			Event::Command(Command::Pause(_)) => {
+				self.timer.state = State::Paused(dest - Instant::now())
+			}
+			Event::Command(Command::Next(_)) => self.timer.state = self.data.next_session(),
+			Event::Command(Command::Prev(_)) => self.timer.state = self.data.prev_session(),
+			Event::Jump(idx) => self.timer.state = self.data.jump_session(idx),
 			Event::Command(Command::Reload(_)) => self.data.read_conf::<true>()?,
-			Event::Fetch(format, stream) =>
-				self.data.handle_fetch_resumed(
-					Some(&Overridables::new().format(&format)),
-					stream,
-					dest
-				).await?,
-			Event::Listen(overrid, stream) =>
-				self.timer.writer.add_stream(stream.into_blocking(), overrid),
-			Event::ListenExit(overrid, stream) =>
-				self.data.handle_fetch_resumed(
-					overrid.and_then(|o| self.data.curr_session().overrides.get(&o)),
-					stream,
-					dest
-				).await?,
+			Event::Fetch(format, stream) => {
+				self.data
+					.handle_fetch_resumed(Some(&Overridables::new().format(&format)), stream, dest)
+					.await?
+			}
+			Event::Listen(overrid, stream) => self
+				.timer
+				.writer
+				.add_stream(stream.into_blocking(), overrid),
+			Event::ListenExit(overrid, stream) => {
+				self.data
+					.handle_fetch_resumed(
+						overrid.and_then(|o| self.data.curr_session().overrides.get(&o)),
+						stream,
+						dest,
+					)
+					.await?
+			}
 			_ => unreachable!(),
 		}
 		Ok(())
@@ -136,7 +150,9 @@ impl App {
 	async fn pause_session(&mut self, duration: Duration) -> Result<(), Error> {
 		const DELTA: Duration = Duration::from_nanos(1_000_000_000 - 1);
 
-		self.timer.writer.write::<false>(self.data.curr_session(), duration + DELTA)?;
+		self.timer
+			.writer
+			.write::<false>(self.data.curr_session(), duration + DELTA)?;
 
 		match self.data.handle_commands::<false>().await? {
 			Event::Finished => {
@@ -151,28 +167,36 @@ impl App {
 			Event::Command(Command::Resume(_)) => {
 				let start = Instant::now();
 				self.timer.state = State::Resumed(start, start + duration);
-				self.timer.writer.write::<true>(self.data.curr_session(), duration + DELTA)?;
+				self.timer
+					.writer
+					.write::<true>(self.data.curr_session(), duration + DELTA)?;
 			}
-			Event::Command(Command::Next(_)) =>
-				self.timer.state = self.data.next_session(),
-			Event::Command(Command::Prev(_)) =>
-				self.timer.state = self.data.prev_session(),
+			Event::Command(Command::Next(_)) => self.timer.state = self.data.next_session(),
+			Event::Command(Command::Prev(_)) => self.timer.state = self.data.prev_session(),
 			Event::Jump(idx) => self.timer.state = self.data.jump_session(idx),
 			Event::Command(Command::Reload(_)) => self.data.read_conf::<true>()?,
-			Event::Fetch(format, stream) =>
-				self.data.handle_fetch_paused(
-					Some(&Overridables::new().format(&format)),
-					stream,
-					duration + DELTA
-				).await?,
-			Event::Listen(overrid, stream) =>
-				self.timer.writer.add_stream(stream.into_blocking(), overrid),
-			Event::ListenExit(overrid, stream) =>
-				self.data.handle_fetch_paused(
-					overrid.and_then(|o| self.data.curr_session().overrides.get(&o)),
-					stream,
-					duration + DELTA
-				).await?,
+			Event::Fetch(format, stream) => {
+				self.data
+					.handle_fetch_paused(
+						Some(&Overridables::new().format(&format)),
+						stream,
+						duration + DELTA,
+					)
+					.await?
+			}
+			Event::Listen(overrid, stream) => self
+				.timer
+				.writer
+				.add_stream(stream.into_blocking(), overrid),
+			Event::ListenExit(overrid, stream) => {
+				self.data
+					.handle_fetch_paused(
+						overrid.and_then(|o| self.data.curr_session().overrides.get(&o)),
+						stream,
+						duration + DELTA,
+					)
+					.await?
+			}
 			_ => unreachable!(),
 		}
 		Ok(())
@@ -208,12 +232,12 @@ impl AppData {
 	}
 
 	fn read_conf<const R: bool>(&mut self) -> Result<(), Error> {
-		let conf_data = fs::read_to_string(&self.config_path).map_err(|_|
+		let conf_data = fs::read_to_string(&self.config_path).map_err(|_| {
 			Error::IoError(IoError::new(
 				ErrorKind::NotFound,
 				format!("Could not load config file \"{}\"", self.config_path),
-			)
-		))?;
+			))
+		})?;
 		let config = ConfigBuilder::deserialize(&conf_data)?.build()?;
 		let mut sid = SessionId::new(&config.sessions, config.iterations);
 
@@ -240,39 +264,52 @@ impl AppData {
 			let msg = stream.read(&mut buffer).await?;
 			let command: Command = bincode::deserialize(&msg)?;
 			match command {
-				Command::Pause(_) | Command::Toggle(_) if R =>
-					return Ok(Event::Command(Command::Pause(PauseArgs {}))),
-				Command::Resume(_) | Command::Toggle(_) if !R =>
-					return Ok(Event::Command(Command::Resume(ResumeArgs {}))),
-				Command::Next(_) if !self.sid.is_last() =>
-					return Ok(Event::Command(command)),
-				Command::Prev(_) if !self.sid.is_first() =>
-					return Ok(Event::Command(command)),
+				Command::Pause(_) | Command::Toggle(_) if R => {
+					return Ok(Event::Command(Command::Pause(PauseArgs {})))
+				}
+				Command::Resume(_) | Command::Toggle(_) if !R => {
+					return Ok(Event::Command(Command::Resume(ResumeArgs {})))
+				}
+				Command::Next(_) if !self.sid.is_last() => return Ok(Event::Command(command)),
+				Command::Prev(_) if !self.sid.is_first() => return Ok(Event::Command(command)),
 				Command::Finish(_) => return Ok(Event::Finished),
-				Command::Jump(JumpArgs { id }) => if let Some(idx) = self.config.idmap.get(&id) {
-					return Ok(Event::Jump(*idx));
+				Command::Jump(JumpArgs { id }) => {
+					if let Some(idx) = self.config.idmap.get(&id) {
+						return Ok(Event::Jump(*idx));
+					}
 				}
 				Command::Reload(_) => return Ok(Event::Command(command)),
-				Command::Fetch(FetchArgs { format }) =>
-					return Ok(Event::Fetch(format, stream)),
-				Command::Listen(ListenArgs { overrid, exit }) => return if exit {
-					Ok(Event::ListenExit(overrid, stream))
-				} else {
-					Ok(Event::Listen(overrid, stream))
-				},
+				Command::Fetch(FetchArgs { format }) => return Ok(Event::Fetch(format, stream)),
+				Command::Listen(ListenArgs { overrid, exit }) => {
+					return if exit {
+						Ok(Event::ListenExit(overrid, stream))
+					} else {
+						Ok(Event::Listen(overrid, stream))
+					}
+				}
 				_ => {}
 			}
 		}
 	}
 
-	async fn handle_fetch_resumed(&self, overrides: Option<&Overridables>, mut stream: Stream, dest: Instant) -> Result<(), Error> {
+	async fn handle_fetch_resumed(
+		&self,
+		overrides: Option<&Overridables>,
+		mut stream: Stream,
+		dest: Instant,
+	) -> Result<(), Error> {
 		let remaining = dest - Instant::now();
 		let displayed = self.curr_session().display::<true>(remaining, overrides);
 		stream.write(format!("{}", displayed).as_bytes()).await?;
 		Ok(())
 	}
 
-	async fn handle_fetch_paused(&self, overrides: Option<&Overridables>, mut stream: Stream, duration: Duration) -> Result<(), Error> {
+	async fn handle_fetch_paused(
+		&self,
+		overrides: Option<&Overridables>,
+		mut stream: Stream,
+		duration: Duration,
+	) -> Result<(), Error> {
 		let displayed = self.curr_session().display::<false>(duration, overrides);
 		stream.write(format!("{}", displayed).as_bytes()).await?;
 		Ok(())

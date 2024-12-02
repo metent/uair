@@ -1,19 +1,19 @@
 mod app;
 mod config;
-mod socket;
 mod session;
+mod socket;
 mod timer;
 
-use std::env;
-use std::io::{self, Write};
-use std::process::ExitCode;
-use uair::get_socket_path;
+use crate::app::App;
 use argh::FromArgs;
 use futures_lite::{FutureExt, StreamExt};
 use log::error;
 use signal_hook::consts::signal::*;
 use signal_hook_async_std::Signals;
-use crate::app::App;
+use std::env;
+use std::io::{self, Write};
+use std::process::ExitCode;
+use uair::get_socket_path;
 
 fn main() -> ExitCode {
 	let args: Args = argh::from_env();
@@ -33,7 +33,9 @@ fn main() -> ExitCode {
 		Ok(app) => app,
 		Err(err) => {
 			error!("{}", err);
-			if enable_stderr { eprintln!("{}", err) }
+			if enable_stderr {
+				eprintln!("{}", err)
+			}
 			return ExitCode::FAILURE;
 		}
 	};

@@ -1,10 +1,10 @@
-use std::collections::HashMap;
-use std::time::Duration;
-use std::str::FromStr;
-use serde::{Serialize, Deserialize};
+use crate::session::{Color, Overridables, Session, TimeFormatToken, Token};
 use serde::de::Error as _;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::str::FromStr;
+use std::time::Duration;
 use toml::de::Error;
-use crate::session::{Color, Overridables, Session, Token, TimeFormatToken};
 
 #[derive(Default)]
 pub struct Config {
@@ -40,7 +40,10 @@ impl ConfigBuilder {
 		for (idx, session) in self.sessions.into_iter().enumerate() {
 			let session = session.build(&self.defaults, idx);
 			if let Some(idx2) = idmap.get(&session.id) {
-				return Err(Error::custom(format!("Duplicate identifier {} present at index {} and {}.", session.id, idx, idx2)));
+				return Err(Error::custom(format!(
+					"Duplicate identifier {} present at index {} and {}.",
+					session.id, idx, idx2
+				)));
 			}
 			idmap.insert(session.id.clone(), idx);
 			sessions.push(session);
@@ -72,7 +75,7 @@ pub struct Defaults {
 	command: String,
 	#[serde(default = "Defaults::format")]
 	format: String,
-	#[serde (default = "Defaults::time_format")]
+	#[serde(default = "Defaults::time_format")]
 	time_format: String,
 	#[serde(default = "Defaults::autostart")]
 	autostart: bool,
@@ -85,15 +88,33 @@ pub struct Defaults {
 }
 
 impl Defaults {
-	fn name() -> String { "Work".into() }
-	fn duration() -> Duration { Duration::from_secs(25 * 60) }
-	fn command() -> String { "notify-send 'Session Completed!'".into() }
-	fn format() -> String { "{time}\n".into() }
-	fn time_format() -> String { "%*-Yyear%P %*-Bmonth%P %*-Dday%P %*-Hh %*-Mm %*-Ss".into() }
-	fn autostart() -> bool { false }
-	fn paused_state_text() -> String { "⏸".into() }
-	fn resumed_state_text() -> String { "⏵".into() }
-	fn overrides() -> HashMap<String, OverridablesBuilder> { HashMap::new() }
+	fn name() -> String {
+		"Work".into()
+	}
+	fn duration() -> Duration {
+		Duration::from_secs(25 * 60)
+	}
+	fn command() -> String {
+		"notify-send 'Session Completed!'".into()
+	}
+	fn format() -> String {
+		"{time}\n".into()
+	}
+	fn time_format() -> String {
+		"%*-Yyear%P %*-Bmonth%P %*-Dday%P %*-Hh %*-Mm %*-Ss".into()
+	}
+	fn autostart() -> bool {
+		false
+	}
+	fn paused_state_text() -> String {
+		"⏸".into()
+	}
+	fn resumed_state_text() -> String {
+		"⏵".into()
+	}
+	fn overrides() -> HashMap<String, OverridablesBuilder> {
+		HashMap::new()
+	}
 }
 
 impl Default for Defaults {
@@ -133,20 +154,34 @@ impl SessionBuilder {
 	fn build(self, defaults: &Defaults, idx: usize) -> Session {
 		let mut default_overrides = defaults.overrides.clone();
 		default_overrides.extend(self.overrides);
-		let overrides = default_overrides.into_iter().map(|(k, v)| {
-			let default = defaults.overrides.get(&k);
-			(k, v.build(default))
-		}).collect();
+		let overrides = default_overrides
+			.into_iter()
+			.map(|(k, v)| {
+				let default = defaults.overrides.get(&k);
+				(k, v.build(default))
+			})
+			.collect();
 		Session {
 			id: self.id.unwrap_or_else(|| idx.to_string()),
 			name: self.name.unwrap_or_else(|| defaults.name.clone()),
 			duration: self.duration.unwrap_or_else(|| defaults.duration.clone()),
 			command: self.command.unwrap_or_else(|| defaults.command.clone()),
-			format: self.format.map(|f| Token::parse(&f)).unwrap_or_else(|| Token::parse(&defaults.format)),
-			time_format: TimeFormatToken::parse(self.time_format.as_ref().unwrap_or_else(|| &defaults.time_format)),
+			format: self
+				.format
+				.map(|f| Token::parse(&f))
+				.unwrap_or_else(|| Token::parse(&defaults.format)),
+			time_format: TimeFormatToken::parse(
+				self.time_format
+					.as_ref()
+					.unwrap_or_else(|| &defaults.time_format),
+			),
 			autostart: self.autostart.unwrap_or_else(|| defaults.autostart.clone()),
-			paused_state_text: self.paused_state_text.unwrap_or_else(|| defaults.paused_state_text.clone()),
-			resumed_state_text: self.resumed_state_text.unwrap_or_else(|| defaults.resumed_state_text.clone()),
+			paused_state_text: self
+				.paused_state_text
+				.unwrap_or_else(|| defaults.paused_state_text.clone()),
+			resumed_state_text: self
+				.resumed_state_text
+				.unwrap_or_else(|| defaults.resumed_state_text.clone()),
 			overrides,
 		}
 	}
@@ -189,10 +224,20 @@ impl OverridablesBuilder {
 		let default_ob = OverridablesBuilder::default();
 		let defaults = defaults.unwrap_or(&default_ob);
 		Overridables {
-			format: self.format.or(defaults.format.clone()).map(|f| Token::parse(&f)),
-			time_format: self.time_format.or(defaults.time_format.clone()).map(|f| TimeFormatToken::parse(&f)),
-			paused_state_text: self.paused_state_text.or(defaults.paused_state_text.clone()),
-			resumed_state_text: self.resumed_state_text.or(defaults.resumed_state_text.clone()),
+			format: self
+				.format
+				.or(defaults.format.clone())
+				.map(|f| Token::parse(&f)),
+			time_format: self
+				.time_format
+				.or(defaults.time_format.clone())
+				.map(|f| TimeFormatToken::parse(&f)),
+			paused_state_text: self
+				.paused_state_text
+				.or(defaults.paused_state_text.clone()),
+			resumed_state_text: self
+				.resumed_state_text
+				.or(defaults.resumed_state_text.clone()),
 		}
 	}
 }

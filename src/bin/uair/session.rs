@@ -1,12 +1,12 @@
+use humantime::format_duration;
 use std::collections::HashMap;
 use std::fmt::{self, Display, Formatter};
 use std::io;
 use std::process;
 use std::time::Duration;
-use humantime::format_duration;
-use winnow::{Parser, PResult};
 use winnow::combinator::{alt, opt, peek, preceded, repeat, rest};
 use winnow::token::{any, one_of, take_until};
+use winnow::{PResult, Parser};
 
 pub struct Session {
 	pub id: String,
@@ -22,11 +22,22 @@ pub struct Session {
 }
 
 impl Session {
-	pub fn display<'s, const R: bool>(&'s self, time: Duration, overrid: Option<&'s Overridables>) -> DisplayableSession<'s, R> {
+	pub fn display<'s, const R: bool>(
+		&'s self,
+		time: Duration,
+		overrid: Option<&'s Overridables>,
+	) -> DisplayableSession<'s, R> {
 		DisplayableSession {
 			session: self,
-			time: DisplayableTime { time, format: overrid.and_then(|o| o.time_format.as_ref()).unwrap_or(&self.time_format) },
-			format: overrid.and_then(|o| o.format.as_ref()).unwrap_or(&self.format),
+			time: DisplayableTime {
+				time,
+				format: overrid
+					.and_then(|o| o.time_format.as_ref())
+					.unwrap_or(&self.time_format),
+			},
+			format: overrid
+				.and_then(|o| o.format.as_ref())
+				.unwrap_or(&self.format),
 			pst_override: overrid.and_then(|o| o.paused_state_text.as_ref().map(|s| s.as_str())),
 			rst_override: overrid.and_then(|o| o.resumed_state_text.as_ref().map(|s| s.as_str())),
 		}
@@ -60,14 +71,17 @@ impl Overridables {
 	}
 
 	pub fn format(self, format: &str) -> Self {
-		Overridables { format: Some(Token::parse(format)), ..self }
+		Overridables {
+			format: Some(Token::parse(format)),
+			..self
+		}
 	}
 }
 
 pub struct DisplayableSession<'s, const R: bool> {
 	session: &'s Session,
 	time: DisplayableTime<'s>,
-	format: &'s[Token],
+	format: &'s [Token],
 	pst_override: Option<&'s str>,
 	rst_override: Option<&'s str>,
 }
@@ -77,16 +91,24 @@ impl<'s, const R: bool> Display for DisplayableSession<'s, R> {
 		for token in self.format {
 			match token {
 				Token::Name => write!(f, "{}", self.session.name)?,
-				Token::Percent => write!(f, "{}", (
-					self.time.time.as_secs_f32() * 100.0 / self.session.duration.as_secs_f32()
-				) as u8)?,
+				Token::Percent => write!(
+					f,
+					"{}",
+					(self.time.time.as_secs_f32() * 100.0 / self.session.duration.as_secs_f32())
+						as u8
+				)?,
 				Token::Time => write!(f, "{}", self.time)?,
 				Token::Total => write!(f, "{}", format_duration(self.session.duration))?,
-				Token::State => write!(f, "{}", if R {
-					self.rst_override.unwrap_or(&self.session.resumed_state_text)
-				} else {
-					self.pst_override.unwrap_or(&self.session.paused_state_text)
-				})?,
+				Token::State => write!(
+					f,
+					"{}",
+					if R {
+						self.rst_override
+							.unwrap_or(&self.session.resumed_state_text)
+					} else {
+						self.pst_override.unwrap_or(&self.session.paused_state_text)
+					}
+				)?,
 				Token::Color(Color::Black) => write!(f, "{}", "\x1b[0;30m")?,
 				Token::Color(Color::Red) => write!(f, "{}", "\x1b[0;31m")?,
 				Token::Color(Color::Green) => write!(f, "{}", "\x1b[0;32m")?,
@@ -105,7 +127,7 @@ impl<'s, const R: bool> Display for DisplayableSession<'s, R> {
 
 struct DisplayableTime<'s> {
 	time: Duration,
-	format: &'s[TimeFormatToken],
+	format: &'s [TimeFormatToken],
 }
 
 impl<'s> Display for DisplayableTime<'s> {
@@ -151,7 +173,7 @@ impl<'s> Display for DisplayableTime<'s> {
 				}
 				TimeFormatToken::Literal(literal) if !skip => write!(f, "{}", literal)?,
 				TimeFormatToken::Plural if !skip => write!(f, "{}", plural)?,
-				_ => {},
+				_ => {}
 			}
 		}
 		Ok(())
@@ -179,17 +201,23 @@ impl Token {
 		for (i, c) in format.char_indices() {
 			match c {
 				'{' => open = Some(i),
-				'}' => if let Some(j) = open {
-					if let Ok(token) = (&format[j..=i]).parse() {
-						if k != j { tokens.push(Token::Literal(format[k..j].into())) };
-						tokens.push(token);
-						k = i + 1;
+				'}' => {
+					if let Some(j) = open {
+						if let Ok(token) = (&format[j..=i]).parse() {
+							if k != j {
+								tokens.push(Token::Literal(format[k..j].into()))
+							};
+							tokens.push(token);
+							k = i + 1;
+						}
 					}
 				}
-				_ => {},
+				_ => {}
 			}
 		}
-		if k != format.len() { tokens.push(Token::Literal(format[k..].into())) };
+		if k != format.len() {
+			tokens.push(Token::Literal(format[k..].into()))
+		};
 
 		tokens
 	}
@@ -205,11 +233,18 @@ pub enum TimeFormatToken {
 
 impl TimeFormatToken {
 	pub fn parse(mut format: &str) -> Vec<TimeFormatToken> {
-		let res: PResult<Vec<TimeFormatToken>> = repeat(0.., alt((
-			preceded("%", (opt(one_of('*')), opt(one_of(['-', '_', '0'])), opt(any)).map(Self::identify)),
-			take_until(0.., "%").map(|s: &str| TimeFormatToken::Literal(s.into())),
-			(peek(any), rest).map(|(_, s): (char, &str)| TimeFormatToken::Literal(s.into())),
-		))).parse_next(&mut format);
+		let res: PResult<Vec<TimeFormatToken>> = repeat(
+			0..,
+			alt((
+				preceded(
+					"%",
+					(opt(one_of('*')), opt(one_of(['-', '_', '0'])), opt(any)).map(Self::identify),
+				),
+				take_until(0.., "%").map(|s: &str| TimeFormatToken::Literal(s.into())),
+				(peek(any), rest).map(|(_, s): (char, &str)| TimeFormatToken::Literal(s.into())),
+			)),
+		)
+		.parse_next(&mut format);
 		res.unwrap()
 	}
 
@@ -231,11 +266,17 @@ impl TimeFormatToken {
 			Some('P') => TimeFormatToken::Plural,
 			_ => {
 				let mut l = "%".to_string();
-				if let Some(s) = star { l.push(s) };
-				if let Some(f) = flag { l.push(f) };
-				if let Some(c) = spec { l.push(c) };
+				if let Some(s) = star {
+					l.push(s)
+				};
+				if let Some(f) = flag {
+					l.push(f)
+				};
+				if let Some(c) = spec {
+					l.push(c)
+				};
 				TimeFormatToken::Literal(l)
-			},
+			}
 		}
 	}
 }
@@ -324,7 +365,10 @@ impl SessionId {
 	}
 
 	pub fn jump(&self, idx: usize) -> SessionId {
-		SessionId { index: idx, ..*self }
+		SessionId {
+			index: idx,
+			..*self
+		}
 	}
 
 	pub fn is_last(&self) -> bool {
@@ -342,71 +386,95 @@ mod tests {
 
 	#[test]
 	fn parse_format() {
-		assert_eq!(&Token::parse("{cyan}{time}{end}\n"), &[
-			Token::Color(Color::Cyan),
-			Token::Time,
-			Token::Color(Color::End),
-			Token::Literal("\n".into()),
-		]);
-		assert_eq!(&Token::parse("String with {time} with some text ahead."), &[
-			Token::Literal("String with ".into()),
-			Token::Time,
-			Token::Literal(" with some text ahead.".into())
-		]);
-		assert_eq!(&Token::parse("}}{}{{}{}}}{{}{{}}}"), &[
-			Token::Literal("}}{}{{}{}}}{{}{{}}}".into())
-		]);
-		assert_eq!(&Token::parse("{time} text {time}"), &[
-			Token::Time,
-			Token::Literal(" text ".into()),
-			Token::Time,
-		]);
+		assert_eq!(
+			&Token::parse("{cyan}{time}{end}\n"),
+			&[
+				Token::Color(Color::Cyan),
+				Token::Time,
+				Token::Color(Color::End),
+				Token::Literal("\n".into()),
+			]
+		);
+		assert_eq!(
+			&Token::parse("String with {time} with some text ahead."),
+			&[
+				Token::Literal("String with ".into()),
+				Token::Time,
+				Token::Literal(" with some text ahead.".into())
+			]
+		);
+		assert_eq!(
+			&Token::parse("}}{}{{}{}}}{{}{{}}}"),
+			&[Token::Literal("}}{}{{}{}}}{{}{{}}}".into())]
+		);
+		assert_eq!(
+			&Token::parse("{time} text {time}"),
+			&[Token::Time, Token::Literal(" text ".into()), Token::Time,]
+		);
 	}
 
 	#[test]
 	fn parse_time_format() {
-		assert_eq!(&TimeFormatToken::parse("%H:%M:%S"), &[
-			TimeFormatToken::Numeric(Numeric::Hour, Pad::Zero, false),
-			TimeFormatToken::Literal(":".into()),
-			TimeFormatToken::Numeric(Numeric::Minute, Pad::Zero, false),
-			TimeFormatToken::Literal(":".into()),
-			TimeFormatToken::Numeric(Numeric::Second, Pad::Zero, false),
-		]);
-		assert_eq!(&TimeFormatToken::parse("%L:%M:%S"), &[
-			TimeFormatToken::Literal("%L".into()),
-			TimeFormatToken::Literal(":".into()),
-			TimeFormatToken::Numeric(Numeric::Minute, Pad::Zero, false),
-			TimeFormatToken::Literal(":".into()),
-			TimeFormatToken::Numeric(Numeric::Second, Pad::Zero, false),
-		]);
-		assert_eq!(&TimeFormatToken::parse("%H:%M:%"), &[
-			TimeFormatToken::Numeric(Numeric::Hour, Pad::Zero, false),
-			TimeFormatToken::Literal(":".into()),
-			TimeFormatToken::Numeric(Numeric::Minute, Pad::Zero, false),
-			TimeFormatToken::Literal(":".into()),
-			TimeFormatToken::Literal("%".into()),
-		]);
-		assert_eq!(&TimeFormatToken::parse("%_H:%-M:%S"), &[
-			TimeFormatToken::Numeric(Numeric::Hour, Pad::Space, false),
-			TimeFormatToken::Literal(":".into()),
-			TimeFormatToken::Numeric(Numeric::Minute, Pad::None, false),
-			TimeFormatToken::Literal(":".into()),
-			TimeFormatToken::Numeric(Numeric::Second, Pad::Zero, false),
-		]);
-		assert_eq!(&TimeFormatToken::parse("%H:%*-M:%S"), &[
-			TimeFormatToken::Numeric(Numeric::Hour, Pad::Zero, false),
-			TimeFormatToken::Literal(":".into()),
-			TimeFormatToken::Numeric(Numeric::Minute, Pad::None, true),
-			TimeFormatToken::Literal(":".into()),
-			TimeFormatToken::Numeric(Numeric::Second, Pad::Zero, false),
-		]);
-		assert_eq!(&TimeFormatToken::parse("%*-Hh %*-Mm %-Ss"), &[
-			TimeFormatToken::Numeric(Numeric::Hour, Pad::None, true),
-			TimeFormatToken::Literal("h ".into()),
-			TimeFormatToken::Numeric(Numeric::Minute, Pad::None, true),
-			TimeFormatToken::Literal("m ".into()),
-			TimeFormatToken::Numeric(Numeric::Second, Pad::None, false),
-			TimeFormatToken::Literal("s".into()),
-		]);
+		assert_eq!(
+			&TimeFormatToken::parse("%H:%M:%S"),
+			&[
+				TimeFormatToken::Numeric(Numeric::Hour, Pad::Zero, false),
+				TimeFormatToken::Literal(":".into()),
+				TimeFormatToken::Numeric(Numeric::Minute, Pad::Zero, false),
+				TimeFormatToken::Literal(":".into()),
+				TimeFormatToken::Numeric(Numeric::Second, Pad::Zero, false),
+			]
+		);
+		assert_eq!(
+			&TimeFormatToken::parse("%L:%M:%S"),
+			&[
+				TimeFormatToken::Literal("%L".into()),
+				TimeFormatToken::Literal(":".into()),
+				TimeFormatToken::Numeric(Numeric::Minute, Pad::Zero, false),
+				TimeFormatToken::Literal(":".into()),
+				TimeFormatToken::Numeric(Numeric::Second, Pad::Zero, false),
+			]
+		);
+		assert_eq!(
+			&TimeFormatToken::parse("%H:%M:%"),
+			&[
+				TimeFormatToken::Numeric(Numeric::Hour, Pad::Zero, false),
+				TimeFormatToken::Literal(":".into()),
+				TimeFormatToken::Numeric(Numeric::Minute, Pad::Zero, false),
+				TimeFormatToken::Literal(":".into()),
+				TimeFormatToken::Literal("%".into()),
+			]
+		);
+		assert_eq!(
+			&TimeFormatToken::parse("%_H:%-M:%S"),
+			&[
+				TimeFormatToken::Numeric(Numeric::Hour, Pad::Space, false),
+				TimeFormatToken::Literal(":".into()),
+				TimeFormatToken::Numeric(Numeric::Minute, Pad::None, false),
+				TimeFormatToken::Literal(":".into()),
+				TimeFormatToken::Numeric(Numeric::Second, Pad::Zero, false),
+			]
+		);
+		assert_eq!(
+			&TimeFormatToken::parse("%H:%*-M:%S"),
+			&[
+				TimeFormatToken::Numeric(Numeric::Hour, Pad::Zero, false),
+				TimeFormatToken::Literal(":".into()),
+				TimeFormatToken::Numeric(Numeric::Minute, Pad::None, true),
+				TimeFormatToken::Literal(":".into()),
+				TimeFormatToken::Numeric(Numeric::Second, Pad::Zero, false),
+			]
+		);
+		assert_eq!(
+			&TimeFormatToken::parse("%*-Hh %*-Mm %-Ss"),
+			&[
+				TimeFormatToken::Numeric(Numeric::Hour, Pad::None, true),
+				TimeFormatToken::Literal("h ".into()),
+				TimeFormatToken::Numeric(Numeric::Minute, Pad::None, true),
+				TimeFormatToken::Literal("m ".into()),
+				TimeFormatToken::Numeric(Numeric::Second, Pad::None, false),
+				TimeFormatToken::Literal("s".into()),
+			]
+		);
 	}
 }

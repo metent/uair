@@ -1,11 +1,11 @@
-use std::io::{self, Stdout, Write};
-use std::fmt::Write as _;
-use std::time::{Duration, Instant};
-use async_io::Timer;
-use crate::Error;
 use crate::app::Event;
 use crate::session::Session;
 use crate::socket::BlockingStream;
+use crate::Error;
+use async_io::Timer;
+use std::fmt::Write as _;
+use std::io::{self, Stdout, Write};
+use std::time::{Duration, Instant};
 
 pub struct UairTimer {
 	interval: Duration,
@@ -22,7 +22,12 @@ impl UairTimer {
 		}
 	}
 
-	pub async fn start(&mut self, session: &Session, start: Instant, dest: Instant) -> Result<Event, Error> {
+	pub async fn start(
+		&mut self,
+		session: &Session,
+		start: Instant,
+		dest: Instant,
+	) -> Result<Event, Error> {
 		let _guard = StateGuard(&mut self.state);
 
 		let duration = dest - start;
@@ -54,10 +59,17 @@ impl Writer {
 		}
 	}
 
-	pub fn write<const R: bool>(&mut self, session: &Session, duration: Duration) -> Result<(), Error> {
+	pub fn write<const R: bool>(
+		&mut self,
+		session: &Session,
+		duration: Duration,
+	) -> Result<(), Error> {
 		if let Some(stdout) = &mut self.stdout {
 			_ = write!(self.buf, "{}", session.display::<R>(duration, None));
-			if write!(stdout, "{}", self.buf).and_then(|_| stdout.flush()).is_err() {
+			if write!(stdout, "{}", self.buf)
+				.and_then(|_| stdout.flush())
+				.is_err()
+			{
 				self.stdout = None;
 			}
 			self.buf.clear();

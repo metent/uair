@@ -1,9 +1,9 @@
+use argh::FromArgs;
 use std::io::{self, BufRead, BufReader, Read, Write};
 use std::net::Shutdown;
 use std::os::unix::net::UnixStream;
 use std::str;
-use uair::{Command, FetchArgs, get_socket_path};
-use argh::FromArgs;
+use uair::{get_socket_path, Command, FetchArgs};
 
 fn main() -> Result<(), Error> {
 	let mut args: Args = argh::from_env();
@@ -30,7 +30,9 @@ fn main() -> Result<(), Error> {
 
 			loop {
 				reader.read_until(b'\0', &mut buf)?;
-				if buf.is_empty() { break; }
+				if buf.is_empty() {
+					break;
+				}
 				write!(io::stdout(), "{}", str::from_utf8(&buf)?)?;
 				buf.clear();
 			}
@@ -64,7 +66,8 @@ fn unescape(input: &str) -> String {
 						}
 					}
 					match u32::from_str_radix(&input[i + 1..i + 5], 16)
-						.map(|num| char::from_u32(num)) {
+						.map(|num| char::from_u32(num))
+					{
 						Ok(Some(num)) => res.push(num),
 						_ => res.push_str(&input[i - 1..i + 5]),
 					}
@@ -77,7 +80,8 @@ fn unescape(input: &str) -> String {
 						}
 					}
 					match u32::from_str_radix(&input[i + 1..i + 9], 16)
-						.map(|num| char::from_u32(num)) {
+						.map(|num| char::from_u32(num))
+					{
 						Ok(Some(num)) => res.push(num),
 						_ => res.push_str(&input[i - 1..i + 9]),
 					}
