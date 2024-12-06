@@ -243,3 +243,71 @@ impl OverridablesBuilder {
 		}
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use toml::de::Error;
+
+	use log::Level;
+
+	const TOML_CFG: &str = r#"
+loop-on-end = true
+
+[defaults]
+format = "{time}\n"
+time_format = "%M:%S"
+
+[[sessions]]
+"#;
+
+	#[test]
+	fn unknown_config_field_warning() -> Result<(), Error> {
+		testing_logger::setup();
+		ConfigBuilder::deserialize(TOML_CFG)?;
+		testing_logger::validate(|captured_logs| {
+			assert_eq!(captured_logs.len(), 1);
+			assert!(captured_logs[0]
+				.body
+				.contains("is not a valid config and will be ignored"));
+			assert_eq!(captured_logs[0].level, Level::Warn);
+		});
+		Ok(())
+	}
+	//
+	//
+	// /// A captured call to the logging system. A `Vec` of these is passed
+	// /// to the closure supplied to the `validate()` function.
+	// struct CapturedLog {
+	//     /// The formatted log message.
+	//     body: String,
+	//     /// The level.
+	//     level: Level,
+	//     /// The target.
+	//     target: String
+	// }
+	//
+	// struct TestingLogger {
+	//     captured: Vec<CapturedLog>,
+	// }
+	//
+	// impl log::Log for TestingLogger {
+	//     fn enabled(&self, _metadata: &log::Metadata) -> bool {
+	//         true // capture all log levels
+	//     }
+	//
+	//     fn log(& self, record: &log::Record) {
+	//         self.captured.push({
+	//             let captured_record = CapturedLog {
+	//                 body: format!("{}",record.args()),
+	//                 level: record.level(),
+	//                 target: record.target().to_string()
+	//             };
+	//             captured_record
+	//         });
+	//     }
+	//
+	//     fn flush(&self) {}
+	//
+	// }
+}
