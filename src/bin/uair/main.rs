@@ -7,10 +7,13 @@ mod timer;
 use crate::app::App;
 use argh::FromArgs;
 use futures_lite::{FutureExt, StreamExt};
-use log::error;
+use log::{error, LevelFilter};
 use signal_hook::consts::signal::*;
 use signal_hook_async_std::Signals;
+use simplelog::{ColorChoice, Config as LogConfig, TermLogger, TerminalMode, WriteLogger};
 use std::env;
+use std::fmt::Display;
+use std::fs::File;
 use std::io::{self, Write};
 use std::process::ExitCode;
 use uair::get_socket_path;
@@ -29,23 +32,19 @@ fn main() -> ExitCode {
 
 	let enable_stderr = args.log != "-";
 
+	if let Err(err) = init_logger(&args) {
+		return raise_err(err, enable_stderr);
+	}
+
 	let app = match App::new(args) {
 		Ok(app) => app,
 		Err(err) => {
-			error!("{}", err);
-			if enable_stderr {
-				eprintln!("{}", err)
-			}
-			return ExitCode::FAILURE;
+			return raise_err(err, enable_stderr);
 		}
 	};
 
 	if let Err(err) = async_io::block_on(app.run().or(catch_term_signals())) {
-		error!("{}", err);
-		if enable_stderr {
-			eprintln!("{}", err);
-			return ExitCode::FAILURE;
-		}
+		return raise_err(err, enable_stderr);
 	}
 
 	ExitCode::SUCCESS
@@ -89,6 +88,32 @@ async fn catch_term_signals() -> Result<(), Error> {
 	let mut signals = Signals::new([SIGTERM, SIGINT, SIGQUIT])?;
 	signals.next().await;
 	Ok(())
+}
+
+fn init_logger(args: &Args) -> Result<(), Error> {
+	if args.log == "-" {
+		TermLogger::init(
+			LevelFilter::Info,
+			LogConfig::default(),
+			TerminalMode::Stderr,
+			ColorChoice::Auto,
+		)?;
+	} else {
+		WriteLogger::init(
+			LevelFilter::Info,
+			LogConfig::default(),
+			File::create(&args.log)?,
+		)?;
+	}
+	Ok(())
+}
+
+fn raise_err(err: impl Display, enable_stderr: bool) -> ExitCode {
+	error!("{}", err);
+	if enable_stderr {
+		eprintln!("{}", err)
+	}
+	ExitCode::FAILURE
 }
 
 #[derive(thiserror::Error, Debug)]

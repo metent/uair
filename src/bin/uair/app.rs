@@ -4,9 +4,8 @@ use crate::socket::{Listener, Stream};
 use crate::timer::{State, UairTimer};
 use crate::{Args, Error};
 use futures_lite::FutureExt;
-use log::{error, LevelFilter};
-use simplelog::{ColorChoice, Config as LogConfig, TermLogger, TerminalMode, WriteLogger};
-use std::fs::{self, File};
+use log::error;
+use std::fs;
 use std::io::{self, Error as IoError, ErrorKind, Write};
 use std::time::{Duration, Instant};
 use uair::{Command, FetchArgs, JumpArgs, ListenArgs, PauseArgs, ResumeArgs};
@@ -18,20 +17,6 @@ pub struct App {
 
 impl App {
 	pub fn new(args: Args) -> Result<Self, Error> {
-		if args.log == "-" {
-			TermLogger::init(
-				LevelFilter::Info,
-				LogConfig::default(),
-				TerminalMode::Stderr,
-				ColorChoice::Auto,
-			)?;
-		} else {
-			WriteLogger::init(
-				LevelFilter::Info,
-				LogConfig::default(),
-				File::create(&args.log)?,
-			)?;
-		}
 		let timer = UairTimer::new(Duration::from_secs(1), args.quiet);
 		let data = AppData::new(args)?;
 		Ok(App { data, timer })
