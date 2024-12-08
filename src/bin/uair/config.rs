@@ -274,40 +274,4 @@ time_format = "%M:%S"
 		});
 		Ok(())
 	}
-	//
-	//
-	// /// A captured call to the logging system. A `Vec` of these is passed
-	// /// to the closure supplied to the `validate()` function.
-	// struct CapturedLog {
-	//     /// The formatted log message.
-	//     body: String,
-	//     /// The level.
-	//     level: Level,
-	//     /// The target.
-	//     target: String
-	// }
-	//
-	// struct TestingLogger {
-	//     captured: Vec<CapturedLog>,
-	// }
-	//
-	// impl log::Log for TestingLogger {
-	//     fn enabled(&self, _metadata: &log::Metadata) -> bool {
-	//         true // capture all log levels
-	//     }
-	//
-	//     fn log(& self, record: &log::Record) {
-	//         self.captured.push({
-	//             let captured_record = CapturedLog {
-	//                 body: format!("{}",record.args()),
-	//                 level: record.level(),
-	//                 target: record.target().to_string()
-	//             };
-	//             captured_record
-	//         });
-	//     }
-	//
-	//     fn flush(&self) {}
-	//
-	// }
 }
