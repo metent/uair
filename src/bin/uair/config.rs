@@ -1,4 +1,5 @@
 use crate::session::{Color, Overridables, Session, TimeFormatToken, Token};
+use log::warn;
 use serde::de::Error as _;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -31,7 +32,10 @@ pub struct ConfigBuilder {
 
 impl ConfigBuilder {
 	pub fn deserialize(conf: &str) -> Result<Self, Error> {
-		toml::from_str(conf)
+		let deserializer = toml::Deserializer::new(conf);
+		serde_ignored::deserialize(deserializer, |path| {
+			warn!("{path} is not a valid config and will be ignored.")
+		})
 	}
 
 	pub fn build(self) -> Result<Config, Error> {
@@ -237,5 +241,37 @@ impl OverridablesBuilder {
 				.resumed_state_text
 				.or(defaults.resumed_state_text.clone()),
 		}
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use toml::de::Error;
+
+	use log::Level;
+
+	const TOML_CFG: &str = r#"
+loop-on-end = true
+
+[defaults]
+format = "{time}\n"
+time_format = "%M:%S"
+
+[[sessions]]
+"#;
+
+	#[test]
+	fn unknown_config_field_warning() -> Result<(), Error> {
+		testing_logger::setup();
+		ConfigBuilder::deserialize(TOML_CFG)?;
+		testing_logger::validate(|captured_logs| {
+			assert_eq!(captured_logs.len(), 1);
+			assert!(captured_logs[0]
+				.body
+				.contains("is not a valid config and will be ignored"));
+			assert_eq!(captured_logs[0].level, Level::Warn);
+		});
+		Ok(())
 	}
 }
