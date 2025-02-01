@@ -5,9 +5,9 @@ use std::fmt::{self, Display, Formatter};
 use std::io;
 use std::process::Stdio;
 use std::time::Duration;
-use winnow::combinator::{alt, opt, peek, preceded, repeat, rest};
-use winnow::token::{any, one_of, take_until};
-use winnow::{PResult, Parser};
+use winnow::combinator::{alt, opt, peek, preceded, repeat};
+use winnow::token::{any, one_of, rest, take_until};
+use winnow::{ModalResult, Parser};
 
 pub struct Session {
 	pub id: String,
@@ -237,7 +237,7 @@ pub enum TimeFormatToken {
 
 impl TimeFormatToken {
 	pub fn parse(mut format: &str) -> Vec<TimeFormatToken> {
-		let res: PResult<Vec<TimeFormatToken>> = repeat(
+		let res: ModalResult<Vec<TimeFormatToken>> = repeat(
 			0..,
 			alt((
 				preceded(
