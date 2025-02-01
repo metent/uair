@@ -6,10 +6,9 @@ mod timer;
 
 use crate::app::App;
 use argh::FromArgs;
+use async_signal::{Signal, Signals};
 use futures_lite::{FutureExt, StreamExt};
 use log::{error, LevelFilter};
-use signal_hook::consts::signal::*;
-use signal_hook_async_std::Signals;
 use simplelog::{ColorChoice, Config as LogConfig, TermLogger, TerminalMode, WriteLogger};
 use std::env;
 use std::fmt::Display;
@@ -85,7 +84,7 @@ fn get_config_path() -> String {
 }
 
 async fn catch_term_signals() -> Result<(), Error> {
-	let mut signals = Signals::new([SIGTERM, SIGINT, SIGQUIT])?;
+	let mut signals = Signals::new([Signal::Term, Signal::Int, Signal::Quit])?;
 	signals.next().await;
 	Ok(())
 }

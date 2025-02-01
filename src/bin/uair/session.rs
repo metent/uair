@@ -1,8 +1,9 @@
+use async_process::Command;
 use humantime::format_duration;
 use std::collections::HashMap;
 use std::fmt::{self, Display, Formatter};
 use std::io;
-use std::process;
+use std::process::Stdio;
 use std::time::Duration;
 use winnow::combinator::{alt, opt, peek, preceded, repeat, rest};
 use winnow::token::{any, one_of, take_until};
@@ -46,11 +47,14 @@ impl Session {
 	pub fn run_command(&self) -> io::Result<()> {
 		if !self.command.is_empty() {
 			let duration = humantime::format_duration(self.duration).to_string();
-			process::Command::new("sh")
+			Command::new("/bin/sh")
 				.env("name", &self.name)
 				.env("duration", duration)
 				.arg("-c")
 				.arg(&self.command)
+				.stdin(Stdio::null())
+				.stdout(Stdio::null())
+				.stderr(Stdio::null())
 				.spawn()?;
 		}
 		Ok(())
