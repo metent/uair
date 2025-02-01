@@ -1,4 +1,4 @@
-## Unreleased
+## v0.6.3
 
 ### Added
 
@@ -7,6 +7,10 @@
 ### Fixed
 
 - Automatically reap zombie(terminated) processes of spawned commands by ourselves, as it may not be reaped in some environments
+
+### Changed
+
+- stdin, stdout and stderr of the parent process(`uair`) are no longer inherited by the spawned commands
 
 ### v0.6.2
 
