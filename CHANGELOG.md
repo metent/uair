@@ -1,6 +1,12 @@
 ## Unreleased
 
+### Added
+
 - Log warnings about unknown fields when deserializing the config, letting the user know immediately that the field is invalid. (@0xangelo)
+
+### Fixed
+
+- Automatically reap zombie(terminated) processes of spawned commands by ourselves, as it may not be reaped in some environments
 
 ### v0.6.2
 

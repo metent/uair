@@ -12,15 +12,11 @@ jobs:
           - ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-      - name: Check Cargo.lock
-        run: cargo fetch --locked
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
+        uses: actions/checkout@v4
+      - name: Install latest stable Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Check
+        run: cargo check --locked
       - name: Lint
         run: cargo clippy --all-targets -- -D warnings
       - name: Format
