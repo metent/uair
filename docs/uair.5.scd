@@ -66,6 +66,9 @@ The format property of a session is a string which specifies what and how text i
 
 The list of format specifiers is:
 
+*{id}*
+	Session ID
+
 *{name}*
 	Session name
 

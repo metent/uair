@@ -94,6 +94,7 @@ impl<const R: bool> Display for DisplayableSession<'_, R> {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		for token in self.format {
 			match token {
+				Token::ID => write!(f, "{}", self.session.id)?,
 				Token::Name => write!(f, "{}", self.session.name)?,
 				Token::Percent => write!(
 					f,
@@ -187,6 +188,7 @@ impl Display for DisplayableTime<'_> {
 #[derive(Clone)]
 #[cfg_attr(test, derive(PartialEq, Debug))]
 pub enum Token {
+	ID,
 	Name,
 	Percent,
 	Time,
