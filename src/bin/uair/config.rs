@@ -194,6 +194,7 @@ impl FromStr for Token {
 
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		match s {
+			"{id}" => Ok(Token::ID),
 			"{name}" => Ok(Token::Name),
 			"{percent}" => Ok(Token::Percent),
 			"{time}" => Ok(Token::Time),
