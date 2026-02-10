@@ -114,7 +114,7 @@ impl Defaults {
 		"⏸".into()
 	}
 	fn resumed_state_text() -> String {
-		"⏵".into()
+		"▶".into()
 	}
 	fn overrides() -> HashMap<String, OverridablesBuilder> {
 		HashMap::new()
