@@ -33,7 +33,11 @@ fn main() -> Result<(), Error> {
 				if buf.is_empty() {
 					break;
 				}
-				write!(io::stdout(), "{}", str::from_utf8(&buf)?)?;
+				if buf.last() == Some(&b'\0') {
+					buf.pop();
+				}
+				writeln!(io::stdout(), "{}", str::from_utf8(&buf)?)?;
+				io::stdout().flush()?;
 				buf.clear();
 			}
 		}
